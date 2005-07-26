@@ -1,0 +1,32 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=1318
+
+***** IMPORTANT *****
+The plugin has now been split into two separate vimballs. The plugin itself and the bundles. This was done because bundles were updated a lot more often than the plugin itself.
+
+Previous users of the plugin should delete the old file when upgrading to 1.0. The name of the file changed in 0.6 and so you'll end up with two versions when unpacking the file. Remove the old version "snippetEmu.vim" from the plugin directory. The new version is called "snippetsEmu.vim". Note the extra 's'
+
+
+Homepage: http://slipperysnippets.blogspot.com/
+Issue tracker: http://code.google.com/p/snippetsemu/issues/list
+
+Please email me bugs or create them in the issue tracker.
+
+This file contains some simple functions that attempt to emulate some of the behaviour of 'Snippets' from the OS X editor TextMate, in particular the variable bouncing and replacement behaviour.
+
+DIVING IN:
+
+Install the plugin, start a new perl file (as an example) and type the following in insert mode:
+
+for<tab><tab><tab><tab>
+
+You'll see the text expand and the jumping in action. Try the same again but this time type a new value for 'var' once it is selected. I.e.
+
+for<tab>test<tab><tab><tab>
+
+Notice how all the 'var's are replaced with 'test'.
+
+Check out the bundles and the docs for more examples of what can be done.
+
+*IMPORTANT*
+
+If you have any questions, suggestions, problems or criticisms about the plugin then please, please email me and I will do the best to help.
