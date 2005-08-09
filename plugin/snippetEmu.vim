@@ -52,13 +52,22 @@ if !exists("g:snip_elem_delim")
 	let g:snip_elem_delim = ":"
 endif
 
+if ( !hasmapto( '<Plug>Jumper', 'i' ) )
+   imap <unique> <S-Del> <Plug>Jumper
+endif
+imap <silent> <script> <Plug>Jumper :call Jumper()
+
 let s:search_str = g:snip_start_tag."[^".g:snip_end_tag."]*".g:snip_end_tag
 let s:search_defVal = "[^".g:snip_elem_delim."]*"
 let s:search_endVal = "[^".g:snip_end_tag."]*"
 
 function! SetCom(text)
 	"return "iabbr ".substitute(a:text," "," :call SetPos()i","").":call SetVar()<C-R>=Eatchar('\\s')<CR>"
-	return "iabbr ".substitute(a:text," "," :call SetPos()i","").":call MovePos()<C-R>=Eatchar('\\s')<CR>"
+	if match(a:text,"<buffer>") == 0
+		return "iabbr <buffer> ".substitute(strpart(a:text,stridx(a:text,">")+2)," "," :call SetPos()i","").":call MovePos()<C-R>=Eatchar('\\s')<CR>"
+	else
+		return "iabbr ".substitute(a:text," "," :call SetPos()i","").":call MovePos()<C-R>=Eatchar('\\s')<CR>"
+	endif
 endfunction
 
 function! SetPos()
@@ -337,7 +346,7 @@ fun! Eatchar(pat)
 endfun
 
 " Map <S-Del> to call the Jumping function
-imap <S-Del> :call Jumper()
+"imap <S-Del> :call Jumper()
 
 " Abbreviations are set up as usual but using the Iabbr command rather
 " than iabbr.  Formatting needs to be done as usual, hence the '<<'s and
