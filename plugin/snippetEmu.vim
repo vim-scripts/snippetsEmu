@@ -39,6 +39,18 @@
 " 
 " Enjoy.
 "
+" Known Bugs:
+" Empty tag replacement.  Changing an empty tag will change all remaining
+" empty tags
+"
+" Short variable names.  Having a single character in the tags will mess up
+" the insert point.
+
+if exists('loaded_snippet') || &cp
+	finish
+endif
+
+let loaded_snippet=1
 
 if !exists("g:snip_start_tag")
 	let g:snip_start_tag = "<"
@@ -57,31 +69,39 @@ if ( !hasmapto( '<Plug>Jumper', 'i' ) )
 endif
 imap <silent> <script> <Plug>Jumper :call Jumper()
 
-let s:search_str = g:snip_start_tag."[^".g:snip_end_tag."]*".g:snip_end_tag
+let s:search_str = g:snip_start_tag."[^".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
 let s:search_defVal = "[^".g:snip_elem_delim."]*"
 let s:search_endVal = "[^".g:snip_end_tag."]*"
 
 function! SetCom(text)
 	"return "iabbr ".substitute(a:text," "," :call SetPos()i","").":call SetVar()<C-R>=Eatchar('\\s')<CR>"
 	if match(a:text,"<buffer>") == 0
-		return "iabbr <buffer> ".substitute(strpart(a:text,stridx(a:text,">")+2)," "," :call SetPos()i","").":call MovePos()<C-R>=Eatchar('\\s')<CR>"
+		"return "iabbr <buffer> ".substitute(strpart(a:text,stridx(a:text,">")+2)," "," :call SetPos()i","").":call MovePos()<C-R>=Eatchar('\\s')<CR>"
+		return "iabbr <buffer> ".substitute(strpart(a:text,stridx(a:text,">")+2)," "," :call SetPos()i","").":call NextHop()<C-R>=Eatchar('\\s')<CR>"
 	else
-		return "iabbr ".substitute(a:text," "," :call SetPos()i","").":call MovePos()<C-R>=Eatchar('\\s')<CR>"
+		"return "iabbr ".substitute(a:text," "," :call SetPos()i","").":call MovePos()<C-R>=Eatchar('\\s')<CR>"
+		return "iabbr ".substitute(a:text," "," :call SetPos()i","").":call NextHop()<C-R>=Eatchar('\\s')<CR>"
 	endif
 endfunction
 
 function! SetPos()
 		let b:curCurs = col(".")
 		let b:curLine = line(".")
+		let s:curCurs = col(".")
+		let s:curLine = line(".")
 endfunction
 
 function! MovePos()
 	call cursor(b:curLine, 1)
-	call search(s:search_str)
-	if getline(".")[col(".") + 1] == g:snip_end_tag
+	" Check to see if we've just added a tag at the start of the line.  If not
+	" then search for the next tag.
+	if match(getline("."),s:search_str) != 0
+		call search(s:search_str)
+	endif
+	if getline(".")[col(".")] == g:snip_end_tag
 		" We're at a type 1. tag
 		normal xx
-	elseif getline(".")[col(".") + 1] == g:snip_elem_delim && getline(".")[col(".") + 2] == g:snip_end_tag
+	elseif getline(".")[col(".")] == g:snip_elem_delim && getline(".")[col(".") + 1] == g:snip_end_tag
 		" We're at a "<:>" tag
 		normal xxx
 	endif
@@ -170,9 +190,11 @@ function! NoChangedVal()
 		let s:lastBit = strpart(strpart(s:line,match(s:line,g:snip_end_tag,s:curCurs)),1)
 		call setline(line("."),s:firstBit.s:middleBit.s:lastBit)
 		" Make all the changes
-		while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
-			call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
-		endwhile
+		if s:matchVal != ""
+			while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
+				call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
+			endwhile
+		endif
 		call NextHop()
 	endif
 endfunction
@@ -202,9 +224,11 @@ function! ChangedVal()
 		let s:lastBit = strpart(strpart(s:line,match(s:line,g:snip_end_tag,s:curCurs)),1)
 		call setline(line("."),s:firstBit.s:middleBit.s:lastBit)
 		" Make all the changes
-		while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
-			call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
-		endwhile
+		if s:matchVal != ""
+			while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
+				call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
+			endwhile
+		endif
 		call NextHop()
 	endif
 endfunction
