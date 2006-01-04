@@ -12,7 +12,7 @@
 "
 " Example:
 " 
-" Iabbr forin for @element@ in @collection@@element@.@@end
+" Iabbr forin for @element@ in @collection@<CR>@element@.@@<CR>end
 "
 " The above will expand to the following (indenting may differ):
 " 
@@ -40,11 +40,14 @@
 " Enjoy.
 "
 " Known Bugs:
-" Empty tag replacement.  Changing an empty tag will change all remaining
+" FIXED Empty tag replacement.  Changing an empty tag will change all remaining
 " empty tags
 "
-" Short variable names.  Having a single character in the tags will mess up
+" FIXED Short variable names.  Having a single character in the tags will mess up
 " the insert point.
+"
+" FIXED Autoindentation breaks and too much whitespace can be swallowed.
+" Caused by using 'i' instead of 'a' in the redefined command.
 
 if exists('loaded_snippet') || &cp
 	finish
@@ -67,20 +70,19 @@ endif
 if ( !hasmapto( '<Plug>Jumper', 'i' ) )
    imap <unique> <S-Del> <Plug>Jumper
 endif
-imap <silent> <script> <Plug>Jumper :call Jumper()
+imap <silent> <script> <Plug>Jumper <ESC>:call Jumper()<CR>
 
-let s:search_str = g:snip_start_tag."[^".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
+" A tag is now defined to be non-whitespace characters surrounded by start and
+" end tags.  A tag cannot contain a second start tag before the end tag.
+let s:search_str = g:snip_start_tag."[^<CR>	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
 let s:search_defVal = "[^".g:snip_elem_delim."]*"
 let s:search_endVal = "[^".g:snip_end_tag."]*"
 
 function! SetCom(text)
-	"return "iabbr ".substitute(a:text," "," :call SetPos()i","").":call SetVar()<C-R>=Eatchar('\\s')<CR>"
 	if match(a:text,"<buffer>") == 0
-		"return "iabbr <buffer> ".substitute(strpart(a:text,stridx(a:text,">")+2)," "," :call SetPos()i","").":call MovePos()<C-R>=Eatchar('\\s')<CR>"
-		return "iabbr <buffer> ".substitute(strpart(a:text,stridx(a:text,">")+2)," "," :call SetPos()i","").":call NextHop()<C-R>=Eatchar('\\s')<CR>"
+		return "iabbr <buffer> ".substitute(strpart(a:text,stridx(a:text,">")+2)," "," <ESC>:call SetPos()<CR>a","")."<ESC>:call NextHop()<CR><C-R>=Eatchar('\\s')<CR>"
 	else
-		"return "iabbr ".substitute(a:text," "," :call SetPos()i","").":call MovePos()<C-R>=Eatchar('\\s')<CR>"
-		return "iabbr ".substitute(a:text," "," :call SetPos()i","").":call NextHop()<C-R>=Eatchar('\\s')<CR>"
+		return "iabbr ".substitute(a:text," "," <ESC>:call SetPos()<CR>a","")."<ESC>:call NextHop()<CR><C-R>=Eatchar('\\s')<CR>"
 	endif
 endfunction
 
@@ -263,6 +265,8 @@ function! Jumper()
 		" end tag comes before a start tag
 		let s:endMatch = match(s:line, g:snip_end_tag, s:curCurs)
 		let s:startMatch = match(s:line, g:snip_start_tag, s:curCurs)
+		let s:whiteSpace = match(s:line, '\s', s:curCurs)
+
 		if s:endMatch != -1 && ((s:endMatch < s:startMatch) || s:startMatch == -1)
 			" End has come before start so we're in a tag.
 			if s:line[s:curCurs - 1] == g:snip_start_tag
@@ -273,6 +277,7 @@ function! Jumper()
 		else
 			" Right, we're not in a tag so we don't need to do anything.  Set the
 			" change value to 'null' and relax
+			" call confirm("Not in Tag") " DEBUG
 			let s:replaceVal = ""
 			call NextHop()
 		endif
@@ -305,55 +310,10 @@ function! Jumper()
 	endif
 endfunction
 
-"function! Jumper()
-"	let curCurs = col(".")
-"	let curLine = line(".")
-"	let line = getline(".")
-"	if line[col(".") - 1] == "@"
-"		call search(g:snip_search_str)
-"		"call search("@[^@]*@")
-"		let b:var = matchstr(getline("."),g:snip_search_str) 
-"		"let b:var = matchstr(getline("."),"@[^@]*@") 
-"		let b:var = strpart(b:var,1,strlen(b:var) - 2)
-"		normal l
-"		startinsert
-"	elseif line[col(".")] == "@"
-"		execute "normal lxF@x"
-"		if search(g:snip_search_str,"W") > 0
-"		"if search("@[^@]*@","W") > 0
-"			let b:var = matchstr(getline("."),g:snip_search_str) 
-"			let b:var = strpart(b:var,1,strlen(b:var) - 2)
-"			execute "normal l"
-"			startinsert
-"		else
-"			call cursor(curLine,curCurs)
-"			startinsert
-"		endif
-"	else
-"		let b:substr = strpart(line,0,col("."))
-"		let b:start = strridx(b:substr,"@") + 1
-"		let b:substr = strpart(b:substr,b:start,col(".") - b:start)
-"		while search("@".b:var."@","W") > 0
-"			execute "s/@".b:var."@/".b:substr."/g"
-"		endwhile
-"		call cursor(curLine, curCurs)
-"		execute "normal ld/@xF@x"
-"		if search(g:snip_search_str,"W") > 0
-"		"if search("@[^@]*@","W") > 0
-"			let b:var = matchstr(getline("."),g:snip_search_str) 
-"			let b:var = strpart(b:var,1,strlen(b:var) - 2)
-"			execute "normal l"
-"			startinsert
-"		else
-"			startinsert
-"		endif
-"	endif
-"endfunction
-
 " Set up the command.
 command! -nargs=+ Iabbr execute SetCom(<q-args>)
 
-"The following two functions are from Benji Fisher's foo.vim - a very helpful file
+" The following two functions are from Benji Fisher's foo.vim - a very helpful file
 " The built-in getchar() function returns a Number for an 8-bit character, and
 " a String for any other character.  This version always returns a String.
 fun! Getchar()
@@ -369,12 +329,11 @@ fun! Eatchar(pat)
    return (c =~ a:pat) ? '' : c
 endfun
 
-" Map <S-Del> to call the Jumping function
-"imap <S-Del> :call Jumper()
-
 " Abbreviations are set up as usual but using the Iabbr command rather
 " than iabbr.  Formatting needs to be done as usual, hence the '<<'s and
 " similar.  Not sure how well @ works as a delimiter but it can be changed
-"Iabbr forin for <elem:element> in <collection>	<element>.<>end<<
-"Iabbr forin for @element@ in @collection@	@element@.@@end<<
+" BEST PRACTICE RECOMMENDATION: store your abbreviations in a separate file
+" and source them at the end of this one.
+"Iabbr forin for <elem:element> in <collection><CR>	<element>.<><CR>end<ESC><<
+"Iabbr forin for @element@ in @collection@<CR>	@element@.@@<CR>end<ESC><<
 "Iabbr select select { \|@element@\| @element@.@@ }
