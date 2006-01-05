@@ -40,6 +40,10 @@
 " Enjoy.
 "
 " Known Bugs:
+"
+" If the abbreviation starts with a tag and is inserted at the start of the line
+" then the cursor will not be placed in the correct tag.
+"
 " FIXED Empty tag replacement.  Changing an empty tag will change all remaining
 " empty tags
 "
@@ -96,15 +100,21 @@ function! SetCom(text)
 endfunction
 " }}}
 " {{{ SetPost() - Store the current cursor position
+" This function also now sets up the search strings so that autocommands can be
+" used to defined different tag delimiters for different filetypes
 function! SetPos()
-		let b:curCurs = col(".")
-		let b:curLine = line(".")
-		let s:curCurs = col(".")
-		let s:curLine = line(".")
+  let b:curCurs = col(".")
+  let b:curLine = line(".")
+  let s:curCurs = col(".")
+  let s:curLine = line(".")
+  let s:search_str = g:snip_start_tag."[^	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
+  let s:search_defVal = "[^".g:snip_elem_delim."]*"
+  let s:search_endVal = "[^".g:snip_end_tag."]*"
 endfunction
 " }}}
 " {{{ MovePos() - Move the cursor
 function! MovePos()
+   "let s:search_str = g:snip_start_tag."[^	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
 	call cursor(b:curLine, 1)
 	" Check to see if we've just added a tag at the start of the line.  If not
 	" then search for the next tag.
@@ -125,6 +135,7 @@ endfunction
 " {{{ SetVar() - Set the current tag value
 " Will be used to replace all other similar tags
 function! SetVar()
+      "let s:search_str = g:snip_start_tag."[^	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
 		call cursor(b:curLine, 1)
 		let line = getline(".")
 		let b:var = matchstr(line,g:snip_search_str) 
@@ -139,7 +150,9 @@ endfunction
 " }}}
 " {{{ NextHop() - Jump to the next tag if one is available
 function! NextHop()
-	call cursor(s:curLine, s:curCurs)
+   "let s:search_str = g:snip_start_tag."[^	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
+	"call cursor(s:curLine, s:curCurs)
+	call cursor(s:curLine, 1)
 	if search(s:search_str) != 0
 		if (col(".") + 1) == strlen(getline("."))
 			let s:checkForEnd = 1
@@ -180,6 +193,8 @@ endfunction
 " }}}
 " {{{ NoChangedVal() - Tag not changed
 function! NoChangedVal()
+   "let s:search_defVal = "[^".g:snip_elem_delim."]*"
+   "let s:search_endVal = "[^".g:snip_end_tag."]*"
 	let s:elem_match = match(s:line, g:snip_elem_delim, s:curCurs)
 	if s:elem_match != -1 && s:elem_match < match(s:line, g:snip_end_tag, s:curCurs)
 		" We've got a default value.
@@ -218,6 +233,7 @@ endfunction
 " }}}
 " {{{ ChangedVal() - The user changed the value in the tag
 function! ChangedVal()
+   "let s:search_endVal = "[^".g:snip_end_tag."]*"
 	" We're not by the start of a tag and we're in
 	" a tag so we've changed the value.
 	let s:startIdx = strridx(strpart(s:line,0,s:curCurs),g:snip_start_tag)
@@ -328,7 +344,6 @@ function! Jumper()
 	endif
 endfunction
 " }}}
-" 
 " {{{ Set up the 'Iabbr' command.
 command! -nargs=+ Iabbr execute SetCom(<q-args>)
 
