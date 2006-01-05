@@ -55,6 +55,7 @@ endif
 
 let loaded_snippet=1
 
+" {{{ Set up variables
 if !exists("g:snip_start_tag")
 	let g:snip_start_tag = "<"
 endif
@@ -67,17 +68,25 @@ if !exists("g:snip_elem_delim")
 	let g:snip_elem_delim = ":"
 endif
 
+" }}}
+" {{{ Map Jumper to the default key if not set already
 if ( !hasmapto( '<Plug>Jumper', 'i' ) )
    imap <unique> <S-Del> <Plug>Jumper
 endif
 imap <silent> <script> <Plug>Jumper <ESC>:call Jumper()<CR>
 
+" }}}
+" {{{ Set up the search strings based on the start and end tags
 " A tag is now defined to be non-whitespace characters surrounded by start and
 " end tags.  A tag cannot contain a second start tag before the end tag.
-let s:search_str = g:snip_start_tag."[^<CR>	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
+" Due to the way in which character classes are defined in Vim we cannot
+" easily exclude whitespace.
+"let s:search_str = g:snip_start_tag."[^<CR>	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
+let s:search_str = g:snip_start_tag."[^	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
 let s:search_defVal = "[^".g:snip_elem_delim."]*"
 let s:search_endVal = "[^".g:snip_end_tag."]*"
-
+" }}}
+" {{{ SetCom(text) - Set command function
 function! SetCom(text)
 	if match(a:text,"<buffer>") == 0
 		return "iabbr <buffer> ".substitute(strpart(a:text,stridx(a:text,">")+2)," "," <ESC>:call SetPos()<CR>a","")."<ESC>:call NextHop()<CR><C-R>=Eatchar('\\s')<CR>"
@@ -85,14 +94,16 @@ function! SetCom(text)
 		return "iabbr ".substitute(a:text," "," <ESC>:call SetPos()<CR>a","")."<ESC>:call NextHop()<CR><C-R>=Eatchar('\\s')<CR>"
 	endif
 endfunction
-
+" }}}
+" {{{ SetPost() - Store the current cursor position
 function! SetPos()
 		let b:curCurs = col(".")
 		let b:curLine = line(".")
 		let s:curCurs = col(".")
 		let s:curLine = line(".")
 endfunction
-
+" }}}
+" {{{ MovePos() - Move the cursor
 function! MovePos()
 	call cursor(b:curLine, 1)
 	" Check to see if we've just added a tag at the start of the line.  If not
@@ -110,7 +121,9 @@ function! MovePos()
 	normal l
 	startinsert
 endfunction
-
+" }}}
+" {{{ SetVar() - Set the current tag value
+" Will be used to replace all other similar tags
 function! SetVar()
 		call cursor(b:curLine, 1)
 		let line = getline(".")
@@ -123,7 +136,8 @@ function! SetVar()
 		execute "normal l"
 		startinsert
 endfunction
-
+" }}}
+" {{{ NextHop() - Jump to the next tag if one is available
 function! NextHop()
 	call cursor(s:curLine, s:curCurs)
 	if search(s:search_str) != 0
@@ -163,7 +177,8 @@ function! NextHop()
 		endif
 	endif
 endfunction
-
+" }}}
+" {{{ NoChangedVal() - Tag not changed
 function! NoChangedVal()
 	let s:elem_match = match(s:line, g:snip_elem_delim, s:curCurs)
 	if s:elem_match != -1 && s:elem_match < match(s:line, g:snip_end_tag, s:curCurs)
@@ -200,7 +215,8 @@ function! NoChangedVal()
 		call NextHop()
 	endif
 endfunction
-
+" }}}
+" {{{ ChangedVal() - The user changed the value in the tag
 function! ChangedVal()
 	" We're not by the start of a tag and we're in
 	" a tag so we've changed the value.
@@ -234,7 +250,9 @@ function! ChangedVal()
 		call NextHop()
 	endif
 endfunction
+" }}}
 
+" {{{ Jumper()
 " We need to rewrite this function to reflect the new behaviour. Every jump
 " will now delete the markers so we need to allow for the following conditions
 " 1. Empty tags e.g. "<>".  When we land inside then we delete the tags.  Make
@@ -309,10 +327,12 @@ function! Jumper()
 		endif
 	endif
 endfunction
-
-" Set up the command.
+" }}}
+" 
+" {{{ Set up the 'Iabbr' command.
 command! -nargs=+ Iabbr execute SetCom(<q-args>)
 
+" {{{ Utility functions
 " The following two functions are from Benji Fisher's foo.vim - a very helpful file
 " The built-in getchar() function returns a Number for an 8-bit character, and
 " a String for any other character.  This version always returns a String.
@@ -328,7 +348,7 @@ fun! Eatchar(pat)
    let c = Getchar()
    return (c =~ a:pat) ? '' : c
 endfun
-
+" }}}
 " Abbreviations are set up as usual but using the Iabbr command rather
 " than iabbr.  Formatting needs to be done as usual, hence the '<<'s and
 " similar.  Not sure how well @ works as a delimiter but it can be changed
@@ -337,3 +357,8 @@ endfun
 "Iabbr forin for <elem:element> in <collection><CR>	<element>.<><CR>end<ESC><<
 "Iabbr forin for @element@ in @collection@<CR>	@element@.@@<CR>end<ESC><<
 "Iabbr select select { \|@element@\| @element@.@@ }
+" }}}
+" {{{ Add 'source' lines here
+" source ~/.vim/djangoAbbs.vim
+" }}}
+" vim: set fenc=utf-8 tw=80 sw=2 sts=2 et foldmethod=marker :
