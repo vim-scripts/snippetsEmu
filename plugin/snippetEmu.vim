@@ -39,6 +39,14 @@
 " 
 " Enjoy.
 "
+" Future Features:
+"
+" Commands in tags.  The first named tag should be able to define a default
+" value.  Further tags with the same name should be allowed to have a command
+" instead of a default tag which would then be executed with 'execute'.  The
+" idea is to allow for TextMate style functionality e.g. getter/setter snippets
+" for Obj-C.  Added in 0.3
+" 
 " Known Bugs:
 "
 " If the abbreviation starts with a tag and is inserted at the start of the line
@@ -72,6 +80,8 @@ if !exists("g:snip_elem_delim")
 	let g:snip_elem_delim = ":"
 endif
 
+let s:just_expanded = 0
+
 " }}}
 " {{{ Map Jumper to the default key if not set already
 if ( !hasmapto( '<Plug>Jumper', 'i' ) )
@@ -84,9 +94,9 @@ imap <silent> <script> <Plug>Jumper <ESC>:call Jumper()<CR>
 " A tag is now defined to be non-whitespace characters surrounded by start and
 " end tags.  A tag cannot contain a second start tag before the end tag.
 " Due to the way in which character classes are defined in Vim we cannot
-" easily exclude whitespace.
+" easily exclude whitespace but we give it a good go.
 "let s:search_str = g:snip_start_tag."[^<CR>	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
-let s:search_str = g:snip_start_tag."[^	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
+let s:search_str = g:snip_start_tag."[^\<CR>\<TAB> ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
 let s:search_defVal = "[^".g:snip_elem_delim."]*"
 let s:search_endVal = "[^".g:snip_end_tag."]*"
 " }}}
@@ -99,7 +109,7 @@ function! SetCom(text)
 	endif
 endfunction
 " }}}
-" {{{ SetPost() - Store the current cursor position
+" {{{ SetPos() - Store the current cursor position
 " This function also now sets up the search strings so that autocommands can be
 " used to defined different tag delimiters for different filetypes
 function! SetPos()
@@ -110,6 +120,7 @@ function! SetPos()
   let s:search_str = g:snip_start_tag."[^	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
   let s:search_defVal = "[^".g:snip_elem_delim."]*"
   let s:search_endVal = "[^".g:snip_end_tag."]*"
+  let s:just_expanded = 1
 endfunction
 " }}}
 " {{{ MovePos() - Move the cursor
@@ -132,7 +143,7 @@ function! MovePos()
 	startinsert
 endfunction
 " }}}
-" {{{ SetVar() - Set the current tag value
+" {{{ SetVar() - Set the current tag value - NOT USED ANYWHERE
 " Will be used to replace all other similar tags
 function! SetVar()
       "let s:search_str = g:snip_start_tag."[^	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
@@ -152,7 +163,12 @@ endfunction
 function! NextHop()
    "let s:search_str = g:snip_start_tag."[^	 ".g:snip_start_tag.g:snip_end_tag."]*".g:snip_end_tag
 	"call cursor(s:curLine, s:curCurs)
-	call cursor(s:curLine, 1)
+   if s:just_expanded == 1
+     call cursor(s:curLine, 1)
+     let s:just_expanded = 0
+   else
+     call cursor(s:curLine, s:curCurs)
+   endif
 	if search(s:search_str) != 0
 		if (col(".") + 1) == strlen(getline("."))
 			let s:checkForEnd = 1
@@ -191,26 +207,70 @@ function! NextHop()
 	endif
 endfunction
 " }}}
+" {{{ MakeChanges() - Search the document making all the changes required
+" This function have been factor out to allow the addition of commands in tags
+
+function! MakeChanges()
+		" Make all the changes
+      " Change all the tags with the same name and no commands defined
+		while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
+			call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
+		endwhile
+      " Change all the tags with the same name and a command defined.
+      " I.e. start tag, tag name (matchVal), element delimiter, characters not
+      " whitespace and then end tag
+      " First jump back to where we were as the search doesn't wrap (get an
+      " infinite loop otherwise)
+     if s:just_expanded == 1
+       call cursor(s:curLine, 1)
+       let s:just_expanded = 0
+     else
+       call cursor(s:curLine, s:curCurs)
+     endif
+      while search(g:snip_start_tag.s:matchVal.g:snip_elem_delim,"W") > 0
+        " Grab the command
+        let s:snip_command = matchstr(getline("."),g:snip_elem_delim.".*".g:snip_end_tag, 0)
+        " Escape backslashes for the matching.  Not sure what other escaping is
+        " needed here
+        let s:snip_temp = substitute(s:snip_command, "\\", "\\\\\\\\","g")
+        " Replace the value
+		  call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.s:snip_temp, s:replaceVal, "g"))
+        " Trim and execute the command
+        let s:snip_command = strpart(s:snip_command,1, strlen(s:snip_command)-2)
+        execute s:snip_command
+		endwhile
+endfunction
+
+" }}}
 " {{{ NoChangedVal() - Tag not changed
 function! NoChangedVal()
    "let s:search_defVal = "[^".g:snip_elem_delim."]*"
    "let s:search_endVal = "[^".g:snip_end_tag."]*"
 	let s:elem_match = match(s:line, g:snip_elem_delim, s:curCurs)
 	if s:elem_match != -1 && s:elem_match < match(s:line, g:snip_end_tag, s:curCurs)
-		" We've got a default value.
+     " We've got a default value (g:snip_elem_delim is present before the end
+     " tag)
+     " We're assuming that the user is not editing a tag which has a command in
+     " it, as this would not really make sense... Might be a bad assumption
 		" Grab the value to substitute (the default)
 		let s:replaceVal = matchstr(s:line, s:search_defVal, s:curCurs)
 		" Grab the value to change
 		let s:matchVal = strpart(matchstr(s:line, s:search_endVal, match(s:line, g:snip_elem_delim, s:curCurs)),1)
-		" Make all the changes
 		let s:firstBit = strpart(s:line,0,s:curCurs - 1)
 		let s:middleBit = strpart(s:line,s:curCurs,match(s:line,g:snip_elem_delim,s:curCurs)-s:curCurs)
 		let s:lastBit = strpart(strpart(s:line,match(s:line,g:snip_end_tag,s:curCurs)),1)
 		call setline(line("."),s:firstBit.s:middleBit.s:lastBit)
-		while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
-			call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
-		endwhile
-		call NextHop()
+
+      call MakeChanges()
+      " {{{ Replaced the following with the above function call
+      " Make all the changes
+		"while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
+	   "		call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
+		"endwhile
+      " }}}
+		
+      
+      call NextHop()
 	else
 		" We don't have a default value.  This implies that
 		" the user just hit Jump.  We'll assume that the
@@ -221,12 +281,18 @@ function! NoChangedVal()
 		let s:middleBit = strpart(s:line,s:curCurs,match(s:line,g:snip_end_tag,s:curCurs)-s:curCurs)
 		let s:lastBit = strpart(strpart(s:line,match(s:line,g:snip_end_tag,s:curCurs)),1)
 		call setline(line("."),s:firstBit.s:middleBit.s:lastBit)
+
+      if s:matchVal != ""
+        call MakeChanges()
+      endif
+      " {{{ Replaced the following with the above function call
 		" Make all the changes
-		if s:matchVal != ""
-			while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
-				call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
-			endwhile
-		endif
+		"if s:matchVal != ""
+		"	while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
+		"		call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
+		"	endwhile
+		"endif
+      " }}}
 		call NextHop()
 	endif
 endfunction
@@ -245,10 +311,15 @@ function! ChangedVal()
 		let s:middleBit = strpart(strpart(s:line,strlen(s:firstBit),s:curCurs-strlen(s:firstBit)),1)
 		let s:lastBit = strpart(strpart(s:line,match(s:line,g:snip_end_tag,s:curCurs)),1)
 		call setline(line("."),s:firstBit.s:middleBit.s:lastBit)
+      
+      call MakeChanges()
+      
+      " {{{ Replaced the following with the above function call
 		" Make all the changes
-		while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
-			call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
-		endwhile
+		"while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
+		"	call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
+		"endwhile
+      " }}}
 		call NextHop()
 	else
 		" We don't have a delimiter
@@ -259,15 +330,17 @@ function! ChangedVal()
 		call setline(line("."),s:firstBit.s:middleBit.s:lastBit)
 		" Make all the changes
 		if s:matchVal != ""
-			while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
-				call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
-			endwhile
+        call MakeChanges()
+      " {{{ Replaced the following with the above function call
+		"	while search(g:snip_start_tag.s:matchVal.g:snip_end_tag,"W") > 0
+		"		call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.g:snip_end_tag, s:replaceVal,"g"))
+		"	endwhile
+      "	}}}
 		endif
 		call NextHop()
 	endif
 endfunction
 " }}}
-
 " {{{ Jumper()
 " We need to rewrite this function to reflect the new behaviour. Every jump
 " will now delete the markers so we need to allow for the following conditions
@@ -294,6 +367,11 @@ function! Jumper()
 	" without changing the value.
 	" First we need to check that we're inside a tag i.e. the previous
 	" jump didn't land us in a 1. style tag.
+   
+   " Custom mod for user who wanted to use TAB for tabs and Jumper
+   " if substitute(strpart(getline("."),1, col(".")), "\<TAB>", '', 'g') != ''
+   "if substitute(getline("."), "\<TAB>", '', 'g') != ''
+  
 	if g:snip_start_tag != g:snip_end_tag
 		" The tags are different so we can check to see whether the
 		" end tag comes before a start tag
@@ -342,6 +420,16 @@ function! Jumper()
 			call NextHop()
 		endif
 	endif
+   " Rest of custom TAB for tab modification
+" else
+"    call setline(line("."), getline(".")."\<TAB>")	
+"    startinsert!
+			"call setline(line("."),strpart(getline("."),1,col("."))."\<TAB>".strpart(getline("."), col(".")))
+         "normal a
+         "startinsert
+			"let s:replaceVal = ""
+			"call NextHop()
+"	endif
 endfunction
 " }}}
 " {{{ Set up the 'Iabbr' command.
@@ -367,13 +455,11 @@ endfun
 " Abbreviations are set up as usual but using the Iabbr command rather
 " than iabbr.  Formatting needs to be done as usual, hence the '<<'s and
 " similar.  Not sure how well @ works as a delimiter but it can be changed
-" BEST PRACTICE RECOMMENDATION: store your abbreviations in a separate file
-" and source them at the end of this one.
+" BEST PRACTICE RECOMMENDATION: Store your abbeviation definitions in
+" '.vim/after/plugin/' so they will get sourced once the plugin has been loaded
+" Examples:
 "Iabbr forin for <elem:element> in <collection><CR>	<element>.<><CR>end<ESC><<
 "Iabbr forin for @element@ in @collection@<CR>	@element@.@@<CR>end<ESC><<
 "Iabbr select select { \|@element@\| @element@.@@ }
-" }}}
-" {{{ Add 'source' lines here
-" source ~/.vim/djangoAbbs.vim
 " }}}
 " vim: set fenc=utf-8 tw=80 sw=2 sts=2 et foldmethod=marker :
