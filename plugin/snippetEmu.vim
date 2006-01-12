@@ -229,7 +229,8 @@ function! MakeChanges()
      endif
       while search(g:snip_start_tag.s:matchVal.g:snip_elem_delim,"W") > 0
         " Grab the command
-        let s:snip_command = matchstr(getline("."),g:snip_elem_delim.".*".g:snip_end_tag, 0)
+        "let s:snip_command = matchstr(getline("."),g:snip_elem_delim.".*".g:snip_end_tag, 0)
+        let s:snip_command = matchstr(getline("."),g:snip_elem_delim.".\\{-}".g:snip_end_tag, 0)
         " Escape backslashes for the matching.  Not sure what other escaping is
         " needed here
         let s:snip_temp = substitute(s:snip_command, "\\", "\\\\\\\\","g")
