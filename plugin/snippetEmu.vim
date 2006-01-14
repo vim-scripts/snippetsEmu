@@ -231,14 +231,22 @@ function! MakeChanges()
         " Grab the command
         "let s:snip_command = matchstr(getline("."),g:snip_elem_delim.".*".g:snip_end_tag, 0)
         let s:snip_command = matchstr(getline("."),g:snip_elem_delim.".\\{-}".g:snip_end_tag, 0)
+        " Save current value of 'z'
+        let s:snip_save = @z
+        let @z=s:replaceVal
         " Escape backslashes for the matching.  Not sure what other escaping is
         " needed here
         let s:snip_temp = substitute(s:snip_command, "\\", "\\\\\\\\","g")
-        " Replace the value
-		  call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.s:snip_temp, s:replaceVal, "g"))
-        " Trim and execute the command
+        " Call the command
         let s:snip_command = strpart(s:snip_command,1, strlen(s:snip_command)-2)
-        execute s:snip_command
+        execute 'let @z = '. s:snip_command
+        let s:replaceVal = @z
+        let @z = s:snip_save
+        " Replace the value
+		call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.s:snip_temp, s:replaceVal, "g"))
+        " Trim and execute the command
+        "let s:snip_command = strpart(s:snip_command,1, strlen(s:snip_command)-2)
+        "execute s:snip_command
 		endwhile
 endfunction
 
