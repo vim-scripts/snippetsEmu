@@ -240,10 +240,11 @@ function! MakeChanges()
         " Call the command
         let s:snip_command = strpart(s:snip_command,1, strlen(s:snip_command)-2)
         execute 'let @z = '. s:snip_command
-        let s:replaceVal = @z
-        let @z = s:snip_save
+        "let s:replaceVal = @z
         " Replace the value
-		call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.s:snip_temp, s:replaceVal, "g"))
+		"call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.s:snip_temp, s:replaceVal, "g"))
+		call setline(line("."),substitute(getline("."), g:snip_start_tag.s:matchVal.s:snip_temp, @z, "g"))
+        let @z = s:snip_save
         " Trim and execute the command
         "let s:snip_command = strpart(s:snip_command,1, strlen(s:snip_command)-2)
         "execute s:snip_command
