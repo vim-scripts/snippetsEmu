@@ -4,7 +4,7 @@
 " Description: An attempt to implement TextMate style Snippets. Features include
 "              automatic cursor placement and command execution.
 " Last Change: Sat July 1st 00:09 BST
-" Version:     0.5.1
+" Version:     0.5.2
 "
 " This file contains some simple functions that attempt to emulate some of the 
 " behaviour of 'Snippets' from the OS X editor TextMate, in particular the
@@ -174,7 +174,7 @@ function! <SID>SetCom(text)
     " When using TextMate compatibility we don't need to worry about calling
     " SetPos() or NextHop() as this will be handled when tab is hit
 
-    let text = substitute(a:text, "<CR>\\|<Esc>\\|<Tab>\\|<BS>\\|<Space>\\|<C-r>\\|<Pipe>","\\\\&","g")
+    let text = substitute(a:text, '<CR>\|<Esc>\|<Tab>\|<BS>\|<Space>\|<C-r>\|<Pipe>\|\"','\\&',"g")
 
     let text = substitute(text, "$", "","")
     if match(text,"<buffer>") == 0
