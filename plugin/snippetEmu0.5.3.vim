@@ -3,8 +3,8 @@
 "              ( f.ingram.lists@gmail.com )
 " Description: An attempt to implement TextMate style Snippets. Features include
 "              automatic cursor placement and command execution.
-" Last Change: Sat July 1st 00:09 BST
-" Version:     0.5.2
+" Last Change: Tuesday July 11th 2006
+" Version:     0.5.3
 "
 " This file contains some simple functions that attempt to emulate some of the 
 " behaviour of 'Snippets' from the OS X editor TextMate, in particular the
@@ -36,12 +36,12 @@
 " Example Two:
 " With the cursor at the pipe, hitting <S-Del> will replace:
 " for <MyVariableName|datum> in <data>:
-"	<datum>.<>
+"   <datum>.<>
 "
 " with (the pipe shows the cursor placement):
 "
 " for MyVariableName in <data>:
-"	MyVariableName.<>
+"   MyVariableName.<>
 " 
 " Enjoy.
 "
@@ -64,6 +64,8 @@
 " active tags then the cursor is moved with replacements and commands being
 " performed as usual. If there is no snippet to expand and no active tags then a
 " <Tab> is inserted.
+" The variable can be set in vimrc with the following command:
+" let g:snip_set_textmate_cp = 1
 "
 " Multi-character start and end tags. Start and end tags can now be more than
 " one character in length. The main advantage of this is that a single set of
@@ -129,15 +131,15 @@ endif
 let loaded_snippet=1
 " {{{ Set up variables
 if !exists("g:snip_start_tag")
-	let g:snip_start_tag = "<"
+    let g:snip_start_tag = "<"
 endif
 
 if !exists("g:snip_end_tag")
-	let g:snip_end_tag = ">"
+    let g:snip_end_tag = ">"
 endif
 
 if !exists("g:snip_elem_delim")
-	let g:snip_elem_delim = ":"
+    let g:snip_elem_delim = ":"
 endif
 
 let s:just_expanded = 0
@@ -174,7 +176,7 @@ function! <SID>SetCom(text)
     " When using TextMate compatibility we don't need to worry about calling
     " SetPos() or NextHop() as this will be handled when tab is hit
 
-    let text = substitute(a:text, '<CR>\|<Esc>\|<Tab>\|<BS>\|<Space>\|<C-r>\|<Pipe>\|\"','\\&',"g")
+    let text = substitute(a:text, '<CR>\|<Esc>\|<Tab>\|<BS>\|<Space>\|<C-r>\|<Pipe>\|\"\|\\','\\&',"g")
 
     let text = substitute(text, "$", "","")
     if match(text,"<buffer>") == 0
@@ -249,17 +251,15 @@ endfunction
 " }}}
 " {{{ DeleteEmptyTag 
 function! <SID>DeleteEmptyTag()
-  if strpart(getline("."), col(".") + 1, strlen(g:snip_end_tag)) == g:snip_end_tag
-    for i in range(strlen(g:snip_start_tag) + strlen(g:snip_end_tag))
-      normal x
-    endfor
-    return 1
-    " We're at a type 1. tag
-    "normal xx
-  else
-    normal l
-    return 0
-  endif
+    "if strpart(getline("."), col(".")+strlen(g:snip_start_tag)-1, strlen(g:snip_end_tag)) == g:snip_end_tag
+  for i in range(strlen(g:snip_start_tag) + strlen(g:snip_end_tag))
+    normal x
+  endfor
+"  return 1
+"  else
+"    normal l
+"    return 0
+"  endif
 endfunction
 " }}}
 " {{{ NextHop() - Jump to the next tag if one is available
@@ -274,16 +274,30 @@ function! <SID>NextHop()
     " search
     if match(getline("."), s:search_str,s:curCurs+1) != 0
       if search(s:search_str) != 0
-        " Delete the tag as appropriate
-        let empty = <SID>DeleteEmptyTag()
-        if <SID>CheckForEnd() == 1
-          startinsert!
-        else
-          if !empty
-            for i in range(strlen(g:snip_start_tag)-1)
-              normal l
-            endfor
+        " Delete the tag if appropriate
+        " First check whether we're sitting on an empty tag
+        if strpart(getline("."), col(".")+strlen(g:snip_start_tag)-1, strlen(g:snip_end_tag)) == g:snip_end_tag
+          " We are so let's check whether the tag is the final text on the
+          " line.
+          if match(getline("."), g:snip_start_tag.g:snip_end_tag.'$') -
+                \ (col(".")+strlen(g:snip_start_tag))+1+strlen(g:snip_end_tag) == 0
+            " It is so let's delete it and start insert at the end of the line
+            call <SID>DeleteEmptyTag()
+            startinsert!
+          else
+            " It isn't so we'll delete it and start normally
+            call <SID>DeleteEmptyTag()
+            "for i in range(strlen(g:snip_start_tag)-1)
+            "normal l
+            "endfor
+            startinsert
           endif
+        else
+          " Not on an empty tag so it must be a normal tag, so we'll just start
+          " insert as usual
+          for i in range(strlen(g:snip_start_tag))
+            normal l
+          endfor
           startinsert
         endif
       else
@@ -300,13 +314,25 @@ function! <SID>NextHop()
     else
       " We're sitting on a tag so we'll delete it and start insert
       " Delete the tag as appropriate
-      call <SID>DeleteEmptyTag()
-      if <SID>CheckForEnd() == 1
-        startinsert!
+      if strpart(getline("."), col(".")+strlen(g:snip_start_tag)-1, strlen(g:snip_end_tag)) == g:snip_end_tag
+        " We are so let's check whether the tag is the final text on the
+        " line.
+        if match(getline("."), g:snip_start_tag.g:snip_end_tag.'$') -
+              \ col(".")+strlen(g:snip_start_tag) == 0
+          " It is so let's delete it and start insert at the end of the line
+          call <SID>DeleteEmptyTag()
+          startinsert!
+        else
+          " It isn't so we'll delete it and start normally
+          call <SID>DeleteEmptyTag()
+          startinsert
+        endif
       else
-          for i in range(strlen(g:snip_start_tag)-1)
-            normal l
-          endfor
+        " Not on an empty tag so it must be a normal tag, so we'll just start
+        " insert as usual
+        for i in range(strlen(g:snip_start_tag))
+          normal l
+        endfor
         startinsert
       endif
     endif
@@ -356,8 +382,9 @@ function! <SID>MakeChanges()
   endif
   while search(g:snip_start_tag.s:matchVal.g:snip_elem_delim,"W") > 0
     " Grab the command
-    let temp = matchstr(getline("."),g:snip_elem_delim.".\\{-}".g:snip_end_tag, 0)
-    let commandToRun = strpart(temp, 1, strlen(temp)-2)
+    let commandText = matchstr(getline("."),g:snip_elem_delim.".\\{-}".g:snip_end_tag, 0)
+    let commandToRun = strpart(commandText,1,strlen(commandText)-strlen(g:snip_end_tag)-1)
+    "let commandToRun = strpart(temp, 1, strlen(temp)-2)
     let s:snip_temp = substitute(commandToRun, "\\", "\\\\\\\\","g")
     call setline(line("."),split(substitute(getline("."),g:snip_start_tag.s:matchVal.g:snip_elem_delim.s:snip_temp.g:snip_end_tag,<SID>RunCommand(commandToRun, s:replaceVal), "g"),'\n'))
   endwhile
@@ -372,7 +399,8 @@ function! <SID>NoChangedVal()
     " run. There are no longer default values for a tag, the name is used
     " instead.
     " Grab the command to run
-    let commandToRun = strpart(matchstr(s:line, s:search_endVal, match(s:line, g:snip_elem_delim, s:curCurs)),1)
+    let commandText = matchstr(s:line, s:search_endVal, match(s:line, g:snip_elem_delim, s:curCurs))
+    let commandToRun = strpart(commandText,1,strlen(commandText)-strlen(g:snip_end_tag)+1)
     " Grab the value to change
     let s:matchVal = matchstr(s:line, s:search_commandVal, s:curCurs)
     " Make a copy
@@ -386,7 +414,7 @@ function! <SID>NoChangedVal()
     " the user just hit Jump.  We'll assume that the
     " default value is the same as the variable name.
     let s:matchVal = matchstr(s:line, s:search_endVal, s:curCurs)
-    if s:matchVal[0] == '"'
+    if s:matchVal[0] == '"' 
       " We have a quotes around our tag name so let's remove them
       let s:replaceVal = strpart(s:matchVal,1,strlen(s:matchVal)-2)
       let middleBit = strpart(s:line,s:curCurs+1,match(s:line,g:snip_end_tag,s:curCurs)-s:curCurs-2)
@@ -413,8 +441,12 @@ function! <SID>ChangedVal()
   if match(s:line, g:snip_elem_delim, s:curCurs) != -1 &&
         \(match(s:line, g:snip_elem_delim, s:curCurs) < match(s:line,g:snip_end_tag, s:curCurs))
     " We've got a delimiter tag before the end tag
-    let commandToRun = strpart(matchstr(s:line, s:search_endVal, match(s:line, g:snip_elem_delim, s:curCurs)),1)
-    let s:replaceVal = strpart(getline("."), strridx(getline("."), g:snip_start_tag,s:curCurs)+1,s:curCurs-1)
+    let commandText = matchstr(s:line, s:search_endVal, match(s:line, g:snip_elem_delim, s:curCurs))
+    let commandToRun = strpart(commandText,1,strlen(commandText)-strlen(g:snip_end_tag)+1)
+    "let commandToRun = strpart(matchstr(s:line, s:search_endVal, match(s:line, g:snip_elem_delim, s:curCurs)),1)
+    let tagstart = strridx(getline("."), g:snip_start_tag,s:curCurs)+strlen(g:snip_start_tag)
+    "let s:replaceVal = strpart(getline("."), strridx(getline("."), g:snip_start_tag,s:curCurs)+1,s:curCurs-1)
+    let s:replaceVal = strpart(getline("."), tagstart,s:curCurs-tagstart)
     let s:matchVal = matchstr(s:line, s:search_commandVal, s:curCurs)
     let s:snip_temp = substitute(commandToRun, "\\", "\\\\\\\\","g")
     call setline(line("."),split(substitute(getline("."),g:snip_start_tag.s:replaceVal.s:matchVal.g:snip_elem_delim.s:snip_temp.g:snip_end_tag, <SID>RunCommand(commandToRun, s:replaceVal), "g"),'\n'))
@@ -519,27 +551,27 @@ function! <SID>Jumper()
     "
     " The following code is lifted wholesale from the imaps.vim script - Many
     " thanks for the inspiration to add the TextMate compatibility
-	" Unless we are at the very end of the word, we need to go back in order
-	" to find the last word typed.
-	if virtcol('.') != virtcol('$')
+    " Unless we are at the very end of the word, we need to go back in order
+    " to find the last word typed.
+    if virtcol('.') != virtcol('$')
       normal! h
       let word = expand('<cword>')
       normal! l
-	else
+    else
       let word = expand('<cword>')
-	end
-	let rhs = ''
+    end
+    let rhs = ''
     " We don't use the FT specific variable names so we'll avoid that check. We
     " do need to check for buffer specific expansions, however (which is how we
     " achieve the same thing).
-	if exists('b:snip_'.word)
+    if exists('b:snip_'.word)
       exe 'let rhs = b:snip_'.word
-	elseif exists('g:snip_'.word)
-	" also check for global definitions
+    elseif exists('g:snip_'.word)
+    " also check for global definitions
       exe 'let rhs = g:snip_'.word
-	end
+    end
 
-	if rhs != ''
+    if rhs != ''
       " if this is a mapping, then erase the previous part of the map
       " by also returning a number of backspaces.
       let bkspc = substitute(word, '.', "\<bs>", "g")
@@ -547,7 +579,7 @@ function! <SID>Jumper()
       let s:curCurs = s:curCurs - strlen(expand('<cword>')) - 1
       let s:just_expanded = 1
       return bkspc.rhs."\<Esc>:call cursor(".s:curLine.", ".s:curCurs.")\<CR>:call <SNR>".s:SID()."_NextHop()\<CR>"
-	else
+    else
       " No definition so let's check to see whether we're in a tag
       if <SID>CheckForInTag()
         " We're in a tag so we need to do processing
@@ -570,7 +602,7 @@ function! <SID>Jumper()
           return "\<Tab>"
         endif
       endif
-	end
+    end
   endif
   " We're not using TextMate style jumping so let's use the old school method
 
