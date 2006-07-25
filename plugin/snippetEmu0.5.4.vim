@@ -4,7 +4,7 @@
 " Description: An attempt to implement TextMate style Snippets. Features include
 "              automatic cursor placement and command execution.
 " Last Change: Tuesday July 11th 2006
-" Version:     0.5.3
+" Version:     0.5.4
 "
 " This file contains some simple functions that attempt to emulate some of the 
 " behaviour of 'Snippets' from the OS X editor TextMate, in particular the
@@ -549,17 +549,18 @@ function! <SID>Jumper()
   if exists("g:snip_set_textmate_cp") && g:snip_set_textmate_cp == 1
     " First we'll check that the user hasn't just typed a snippet to expand
     "
-    " The following code is lifted wholesale from the imaps.vim script - Many
-    " thanks for the inspiration to add the TextMate compatibility
-    " Unless we are at the very end of the word, we need to go back in order
-    " to find the last word typed.
-    if virtcol('.') != virtcol('$')
-      normal! h
-      let word = expand('<cword>')
-      normal! l
-    else
-      let word = expand('<cword>')
-    end
+    let word = matchstr(strpart(getline("."), 0, s:curCurs), '\k\{-}$')
+"    " The following code is lifted wholesale from the imaps.vim script - Many
+"    " thanks for the inspiration to add the TextMate compatibility
+"    " Unless we are at the very end of the word, we need to go back in order
+"    " to find the last word typed.
+"    if virtcol('.') != virtcol('$')
+"      normal! h
+"      let word = expand('<cword>')
+"      normal! l
+"    else
+"      let word = expand('<cword>')
+"    end
     let rhs = ''
     " We don't use the FT specific variable names so we'll avoid that check. We
     " do need to check for buffer specific expansions, however (which is how we
@@ -619,8 +620,9 @@ function! <SID>Jumper()
   endif
 endfunction
 " }}}
-" {{{ Set up the 'Iabbr' command.
+" {{{ Set up the 'Iabbr' and 'Snippet' commands
 command! -nargs=+ Iabbr execute <SID>SetCom(<q-args>)
+command! -nargs=+ Snippet execute <SID>SetCom("<buffer> ".<q-args>)
 "}}}
 " {{{ Utility functions
 " The following two functions are from Benji Fisher's foo.vim - a very helpful file
