@@ -3,8 +3,8 @@
 "              ( f.ingram.lists@gmail.com )
 " Description: An attempt to implement TextMate style Snippets. Features include
 "              automatic cursor placement and command execution.
-" Last Change: Monday 14th August 2006
-" Version:     0.5.5
+" Last Change: Tuesday 29th August 2006
+" Version:     0.5.6
 "
 " This file contains some simple functions that attempt to emulate some of the 
 " behaviour of 'Snippets' from the OS X editor TextMate, in particular the
@@ -89,16 +89,31 @@
 " FIXED Autoindentation breaks and too much whitespace can be swallowed.
 " Caused by using 'i' instead of 'a' in the redefined command.
 "
-" TODO Search_str not defined
+" FIXED Search_str not defined
 " Sourcing the script but defining no snippets will generate an error
 "
-" TODO Search_str not buffer specific.
+" FIXED Search_str not buffer specific.
 " Using different tags in different buffers will break the searching in all but
 " the most recently opened (assuming different tags for all buffers)
 "
-" TODO Multiple commands on the same line
+" FIXED Multiple commands on the same line
 " Having two tags with commands defined on the same line presents unexpected
 " behaviour
+"
+" FIXED Escape strings for matching in replacements
+" Special characters in commands or tag names can cause problems when replacing.
+" Infinite loops are very likely.
+"
+" FIXED Default value function doesn't work for named tags
+" Having a named tag will fill @z which in turn will cause the default function
+" to fail. One possible fix will be to remove the possibility for tag names to
+" act as default values. This may annoy, whoever.
+" Fix details: A script variable 's:CHANGED_VAL' is set when a user changes a
+" tag's value. The D() function checks for this and returns the appropriate
+" response.
+"
+" FIXED Snippets starting with 's' don't work due to bad regex.
+" Many thanks to nfowar for spotting this one.
 "
 " Test tags for pattern matching:
 " The following are examples of valid and invalid tags. Whitespace can only be
@@ -216,13 +231,12 @@ function! <SID>SetCom(text)
 
     let text = substitute(text, "$", "","")
     if match(text,"<buffer>") == 0
-      let text = substitute(text, "\s*<buffer>\s*", "","")
-      let text = substitute(text, " ", "", "")
+      let text = substitute(text, '\s*<buffer>\s*', "","")
       let text = substitute(text, " ", ' = "', "")
       call <SID>SetSearchStrings()
       return "let b:snip_".text.'"'
     else
-      let text = substitute(text, "^\s*", "", "")
+      let text = substitute(text, '^\s*', "", "")
       let text = substitute(text, " ", ' = "', "")
       call <SID>SetSearchStrings()
       return "let g:snip_".text.'"'
@@ -381,6 +395,7 @@ endfunction
 function! <SID>RunCommand(command, z)
   " Escape backslashes for the matching.  Not sure what other escaping is
   " needed here
+  exec "echom \"Running this command: ". a:command. "\""
   if <SID>CheckForBufferTags()
     let snip_elem_delim = b:snip_elem_delim
     let snip_start_tag = b:snip_start_tag
@@ -443,13 +458,22 @@ function! <SID>MakeChanges()
     let commandToRun = strpart(commandText,1,strlen(commandText)-strlen(snip_end_tag)-1)
     "let commandToRun = strpart(temp, 1, strlen(temp)-2)
     let s:snip_temp = substitute(commandToRun, "\\", "\\\\\\\\","g")
-    call setline(line("."),split(substitute(getline("."),snip_start_tag.s:matchVal.snip_elem_delim.s:snip_temp.snip_end_tag,<SID>RunCommand(commandToRun, s:replaceVal), "g"),'\n'))
+    let commandResult = <SID>RunCommand(commandToRun, s:replaceVal)
+    exec "echom \"Matching: ". snip_start_tag.s:matchVal.snip_elem_delim.s:snip_temp.snip_end_tag . "\""
+    exec "echom \"Command result: ". commandResult . "\""
+    call setline(line("."),split(substitute(getline("."), '\V'.snip_start_tag.s:matchVal.snip_elem_delim.s:snip_temp.snip_end_tag, commandResult, "g"),'\n'))
   endwhile
 endfunction
 
 " }}}
-" {{{ NoChangedVal() - Tag not changed
-function! <SID>NoChangedVal()
+" {{{ ChangeVals() - Rewrite of ChangedVal and NoChangedVal avoiding code
+" duplication
+function! <SID>ChangeVals(changed)
+  if a:changed == 1
+    let s:CHANGED_VAL = 1
+  else
+    let s:CHANGED_VAL = 0
+  endif
   if <SID>CheckForBufferTags()
     let snip_elem_delim = b:snip_elem_delim
     let snip_start_tag = b:snip_start_tag
@@ -460,6 +484,7 @@ function! <SID>NoChangedVal()
     let snip_end_tag = g:snip_end_tag
   endif
   let elem_match = match(s:line, snip_elem_delim, s:curCurs)
+  let tagstart = strridx(getline("."), snip_start_tag,s:curCurs)+strlen(snip_start_tag)
   if elem_match != -1 && elem_match < match(s:line, snip_end_tag, s:curCurs)
     " We've got snip_elem_delim  before snip_end_tag so we have a command to
     " run. There are no longer default values for a tag, the name is used
@@ -467,77 +492,57 @@ function! <SID>NoChangedVal()
     " Grab the command to run
     let commandText = matchstr(s:line, b:search_endVal, match(s:line, snip_elem_delim, s:curCurs))
     let commandToRun = strpart(commandText,1,strlen(commandText)-strlen(snip_end_tag)+1)
-    " Grab the value to change
+    let commandMatch = substitute(commandToRun, '\', '\\\\', "g")
+    exec "echom \"command to match: ". commandMatch . "\""
+    " matchVal is the same regardless of whether we changed the value or not.
+    " It's always from the cursor to b:search_commandVal (since we've got a
+    " command to run)
     let s:matchVal = matchstr(s:line, b:search_commandVal, s:curCurs)
-    " Make a copy
-    let s:replaceVal = substitute(s:matchVal, '^\"\(.*\)\"$', "\1", "")
-    let snip_temp = substitute(commandToRun, "\\", "\\\\\\\\","g")
-    call setline(s:curLine,split(substitute(getline(s:curLine),snip_start_tag.s:matchVal.snip_elem_delim.snip_temp.snip_end_tag, <SID>RunCommand(commandToRun, s:replaceVal), "g"),"\n"))
-    call <SID>MakeChanges()
-    call <SID>NextHop()
-  else
-    " We don't have a command to run.  This implies that
-    " the user just hit Jump.  We'll assume that the
-    " default value is the same as the variable name.
-    let s:matchVal = matchstr(s:line, b:search_endVal, s:curCurs)
-    if s:matchVal[0] == '"' 
-      " We have a quotes around our tag name so let's remove them
-      let s:replaceVal = strpart(s:matchVal,1,strlen(s:matchVal)-2)
-      let middleBit = strpart(s:line,s:curCurs+1,match(s:line,snip_end_tag,s:curCurs)-s:curCurs-2)
+    " replaceVal is the only thing that will differ.
+    if s:CHANGED_VAL
+      " The value has changed so we need to grab our current position back
+      " to the start of the tag
+      let replaceVal = strpart(getline("."), tagstart,s:curCurs-tagstart)
+      let tagmatch = snip_start_tag.replaceVal.s:matchVal.snip_elem_delim.commandMatch.snip_end_tag
     else
-      let s:replaceVal = strpart(s:matchVal,0,strlen(s:matchVal))
-      let middleBit = strpart(s:line,s:curCurs,match(s:line,snip_end_tag,s:curCurs)-s:curCurs)
+      " The value hasn't changed so it's just the matchVal (the tag name)
+      " without any quotes that are around it
+      let replaceVal = substitute(s:matchVal, '^\"\(.*\)\"$', "\1", "")
+      let tagmatch = snip_start_tag.s:matchVal.snip_elem_delim.commandMatch.snip_end_tag
     endif
-    let firstBit = strpart(s:line,0,s:curCurs - strlen(snip_start_tag))
+    let tagsubsitution = <SID>RunCommand(commandToRun, replaceVal)
+    call setline(".", split(substitute(getline("."), tagmatch, tagsubsitution, "g"),'\n'))
+    let s:replaceVal = tagsubsitution
+    call <SID>MakeChanges()
+  else
+    " There's no command to run
+    let s:matchVal = matchstr(s:line, b:search_endVal, s:curCurs)
+    let firstBit = strpart(s:line,0, tagstart - strlen(snip_start_tag))
+    if s:CHANGED_VAL
+      " This is the value the user typed in. We pull it out as the
+      " line up to the cursor less the 'firstBit' above. We also
+      " chop off the start_tag as well.
+      let middleBit = strpart(strpart(getline("."), strlen(firstBit), s:curCurs-strlen(firstBit)), strlen(snip_start_tag))
+      let s:replaceVal = strpart(strpart(s:line, tagstart-1, s:curCurs - (tagstart - 1)), 1)
+    else
+      if s:matchVal[0] == '"' 
+        " We have a quotes around our tag name so let's remove them
+        let s:replaceVal = strpart(s:matchVal,1,strlen(s:matchVal)-2)
+        let middleBit = strpart(s:line,s:curCurs+1, match(s:line, snip_end_tag, s:curCurs)-s:curCurs-2)
+      else
+        let s:replaceVal = strpart(s:matchVal,0,strlen(s:matchVal))
+        let middleBit = strpart(s:line,s:curCurs,match(s:line,snip_end_tag,s:curCurs)-s:curCurs)
+      endif
+      let firstBit = strpart(s:line,0,s:curCurs - strlen(snip_start_tag))
+    endif
     let lastBit = strpart(strpart(s:line,match(s:line,snip_end_tag,s:curCurs)),strlen(snip_end_tag))
     call setline(line("."),firstBit.middleBit.lastBit)
     if s:matchVal != ""
       call <SID>MakeChanges()
     endif
-    call <SID>NextHop()
   endif
-endfunction
-" }}}
-" {{{ ChangedVal() - The user changed the value in the tag
-function! <SID>ChangedVal()
-  " We're not by the start of a tag and we're in
-  " a tag so we've changed the value.
-  if <SID>CheckForBufferTags()
-    let snip_elem_delim = b:snip_elem_delim
-    let snip_start_tag = b:snip_start_tag
-    let snip_end_tag = b:snip_end_tag
-  else
-    let snip_elem_delim = g:snip_elem_delim
-    let snip_start_tag = g:snip_start_tag
-    let snip_end_tag = g:snip_end_tag
-  endif
-  let s:startIdx = strridx(strpart(s:line,0,s:curCurs),snip_start_tag) + strlen(snip_start_tag) - 1
-  let s:replaceVal = strpart(strpart(s:line, s:startIdx, s:curCurs - s:startIdx),1)
-  if match(s:line, snip_elem_delim, s:curCurs) != -1 &&
-        \(match(s:line, snip_elem_delim, s:curCurs) < match(s:line,snip_end_tag, s:curCurs))
-    " We've got a delimiter tag before the end tag
-    let commandText = matchstr(s:line, b:search_endVal, match(s:line, snip_elem_delim, s:curCurs))
-    let commandToRun = strpart(commandText,1,strlen(commandText)-strlen(snip_end_tag)+1)
-    let tagstart = strridx(getline("."), snip_start_tag,s:curCurs)+strlen(snip_start_tag)
-    let s:replaceVal = strpart(getline("."), tagstart,s:curCurs-tagstart)
-    let s:matchVal = matchstr(s:line, b:search_commandVal, s:curCurs)
-    let s:snip_temp = substitute(commandToRun, "\\", "\\\\\\\\","g")
-    call setline(line("."),split(substitute(getline("."),snip_start_tag.s:replaceVal.s:matchVal.snip_elem_delim.s:snip_temp.snip_end_tag, <SID>RunCommand(commandToRun, s:replaceVal), "g"),'\n'))
-    call <SID>MakeChanges()
-    call <SID>NextHop()
-  else
-    " We don't have a delimiter
-    let s:matchVal = matchstr(s:line, b:search_endVal, s:curCurs)
-    let s:firstBit = strpart(s:line,0,s:startIdx - strlen(snip_start_tag) + 1)
-    let s:middleBit = strpart(strpart(s:line,strlen(s:firstBit),s:curCurs-strlen(s:firstBit)),strlen(snip_start_tag))
-    let s:lastBit = strpart(strpart(s:line,match(s:line,snip_end_tag,s:curCurs)),strlen(snip_start_tag))
-    call setline(line("."),s:firstBit.s:middleBit.s:lastBit)
-    " Make all the changes
-    if s:matchVal != ""
-      call <SID>MakeChanges()
-    endif
-    call <SID>NextHop()
-  endif
+  unlet s:CHANGED_VAL
+  call <SID>NextHop()
 endfunction
 " }}}
 "{{{ SID() - Get the SID for the current script
@@ -671,10 +676,12 @@ function! <SID>Jumper()
       if <SID>CheckForInTag()
         " We're in a tag so we need to do processing
         if strpart(s:line, s:curCurs - strlen(snip_start_tag), strlen(snip_start_tag)) == snip_start_tag
-          call <SID>NoChangedVal()
+          call <SID>ChangeVals(0)
+          "call <SID>NoChangedVal()
           return ''
         else
-          call <SID>ChangedVal()
+          call <SID>ChangeVals(1)
+          "call <SID>ChangedVal()
           return ''
         endif
       else
@@ -695,9 +702,11 @@ function! <SID>Jumper()
 
   if <SID>CheckForInTag()
     if strpart(s:line, s:curCurs - strlen(snip_start_tag), strlen(snip_start_tag)) == snip_start_tag
-      call <SID>NoChangedVal()
+      call <SID>ChangeVals(0)
+      "call <SID>NoChangedVal()
     else
-      call <SID>ChangedVal()
+      call <SID>ChangeVals(1)
+      "call <SID>ChangedVal()
     endif
   else
     " Not in a tag so let's jump to the next tag
@@ -730,11 +739,16 @@ endfun
 " This function will just return what's passed to it. 
 " We use string() so that numbers can be passed more naturally
 fun! D(text)
-  if @z != ''
+  if exists('s:CHANGED_VAL') && s:CHANGED_VAL == 1
     return @z
   else
     return a:text
   endif
+"  if @z != ''
+"    return @z
+"  else
+"    return a:text
+"  endif
 endfun
 " }}}
 " Abbreviations are set up as usual but using the Iabbr command rather
