@@ -3,14 +3,14 @@
 "              ( f.ingram.lists@gmail.com )
 " Description: An attempt to implement TextMate style Snippets. Features include
 "              automatic cursor placement and command execution.
-" Last Change: Tuesday 29th August 2006
-" Version:     0.5.6
+" Last Change: Monday 23rd October 2006
+" Version:     0.6
 "
 " This file contains some simple functions that attempt to emulate some of the 
 " behaviour of 'Snippets' from the OS X editor TextMate, in particular the
 " variable bouncing and replacement behaviour.
 "
-" USAGE:
+" {{{ USAGE:
 "
 " Place the file in your plugin directory.
 " Define snippets using the Iabbr command which takes similar arguments to the
@@ -77,7 +77,7 @@
 "
 " Known Bugs:
 "
-" If the abbreviation starts with a tag and is inserted at the start of the line
+" FIXED If the abbreviation starts with a tag and is inserted at the start of the line
 " then the cursor will not be placed in the correct tag.
 "
 " FIXED Empty tag replacement.  Changing an empty tag will change all remaining
@@ -149,10 +149,26 @@
 "
 " Here's our magic search term (assumes '<',':' and '>' as our tag delimiters:
 " <\([^[:punct:] \t]\{-}\|".\{-}"\)\(:[^>]\{-1,}\)\?>
+" }}}
 
-if exists('loaded_snippet') || &cp
+if v:version < 700
+  echomsg "snippetsEmu plugin requires Vim version 7 or later"
   finish
 endif
+
+let s:debug = 0
+
+function! <SID>Debug(text)
+  if exists('s:debug') && s:debug == 1
+    echom a:text
+  endif
+endfunction
+
+if (exists('loaded_snippet') || &cp) && !s:debug
+  finish
+endif
+
+call <SID>Debug("Started the plugin")
 
 let loaded_snippet=1
 " {{{ Set up variables
@@ -167,10 +183,6 @@ endif
 if !exists("g:snip_elem_delim")
     let g:snip_elem_delim = ":"
 endif
-
-"if !exists("g:snip_textmate_cp")
-"    let g:snip_textmate_cp = 1
-"endif
 
 let s:just_expanded = 0
 
@@ -188,6 +200,8 @@ if exists("g:snip_set_textmate_cp") && g:snip_set_textmate_cp == 1
 else
   imap <silent> <script> <Plug>Jumper <ESC>:call <SID>Jumper()<CR>
 endif
+
+call <SID>Debug("Mapped keys")
 
 " }}}
 " {{{ CheckForBufferTags() - Checks to see whether buffer specific tags have
@@ -223,6 +237,24 @@ endfunction
 " }}}
 " {{{ SetCom(text) - Set command function
 function! <SID>SetCom(text)
+  " First we'll set up the tag highlighting using syntax highlighting
+
+  if !exists("g:snip_disable_highlight") || g:snip_disable_highlight == 0
+    " We do these commands on each snippet definition to ensure that
+    " they are set properly. Supposedly some plugins or options such as
+    " spell can cause highlight groups to disappear.
+    " Thanks to the multiselect plugin for showing how to do this 
+    "hi default SnippetHighlight gui=reverse term=reverse cterm=reverse
+    hi default SnippetHighlight term=reverse cterm=bold ctermfg=7 ctermbg=1 guifg=White guibg=Red
+    if <SID>CheckForBufferTags()
+      let matchPat = b:snip_start_tag.'\([^[:punct:] \t]\{-}\|".\{-}"\)\('.b:snip_elem_delim.'[^'.b:snip_end_tag.']\{-1,}\)\?'.b:snip_end_tag
+    else
+      let matchPat = g:snip_start_tag.'\([^[:punct:] \t]\{-}\|".\{-}"\)\('.g:snip_elem_delim.'[^'.g:snip_end_tag.']\{-1,}\)\?'.g:snip_end_tag
+    endif
+
+    execute "match SnippetHighlight '".matchPat."'"
+  endif
+
   if exists("g:snip_set_textmate_cp") && g:snip_set_textmate_cp == 1
     " When using TextMate compatibility we don't need to worry about calling
     " SetPos() or NextHop() as this will be handled when tab is hit
@@ -232,14 +264,40 @@ function! <SID>SetCom(text)
     let text = substitute(text, "$", "","")
     if match(text,"<buffer>") == 0
       let text = substitute(text, '\s*<buffer>\s*', "","")
-      let text = substitute(text, " ", ' = "', "")
+      let tokens = split(text, ' ')
+      let lhs = tokens[0]
+      let rhs = join(tokens[1:])
       call <SID>SetSearchStrings()
-      return "let b:snip_".text.'"'
+      for char in split(lhs, '\zs')
+        if char == '@'
+          exec 'setlocal iskeyword+=@-@'
+        elseif char != '^'
+          try
+            exec 'setlocal iskeyword+='.char
+          catch /474/
+          endtry
+        endif
+      endfor
+      let lhs = <SID>Hash(lhs)
+      return "let b:snip_".lhs.' = "'.rhs.'"'
     else
       let text = substitute(text, '^\s*', "", "")
-      let text = substitute(text, " ", ' = "', "")
+      let tokens = split(text, ' ')
+      let lhs = tokens[0]
+      let rhs = join(tokens[1:])
       call <SID>SetSearchStrings()
-      return "let g:snip_".text.'"'
+      for char in split(lhs, '\zs')
+        if char == '@'
+          exec 'setlocal iskeyword+=@-@'
+        elseif char != '^'
+          try
+            exec 'setlocal iskeyword+='.char
+          catch /474/
+          endtry
+        endif
+      endfor
+      let lhs = <SID>Hash(lhs)
+      return "let g:snip_".lhs.' = "'.rhs.'"'
     endif
   else
     call <SID>SetSearchStrings()
@@ -263,7 +321,6 @@ function! <SID>SetPos()
   let s:just_expanded = 1
 endfunction
 " }}}
-"
 " {{{ Check for end - Check whether the cursor is at the end of the current line
 function! <SID>CheckForEnd()
   " Check to see whether we're at the end of a line so we can decide on
@@ -304,11 +361,6 @@ function! <SID>DeleteEmptyTag()
   for i in range(strlen(snip_start_tag) + strlen(snip_end_tag))
     normal x
   endfor
-"  return 1
-"  else
-"    normal l
-"    return 0
-"  endif
 endfunction
 " }}}
 " {{{ NextHop() - Jump to the next tag if one is available
@@ -330,7 +382,7 @@ function! <SID>NextHop()
   endif
   " Check to see whether we're sitting on a tag and if not then perform a
   " search
-  if match(getline("."), b:search_str,s:curCurs+1) != 0
+  if match(getline("."), b:search_str,s:curCurs) != 0
     if search(b:search_str) != 0
       " Delete the tag if appropriate
       " First check whether we're sitting on an empty tag
@@ -395,7 +447,6 @@ endfunction
 function! <SID>RunCommand(command, z)
   " Escape backslashes for the matching.  Not sure what other escaping is
   " needed here
-  exec "echom \"Running this command: ". a:command. "\""
   if <SID>CheckForBufferTags()
     let snip_elem_delim = b:snip_elem_delim
     let snip_start_tag = b:snip_start_tag
@@ -409,7 +460,6 @@ function! <SID>RunCommand(command, z)
   let s:snip_temp = substitute(command, "\\", "\\\\\\\\","g")
   " Save current value of 'z'
   let s:snip_save = @z
-  "let @z=s:replaceVal
   let @z=a:z
   " Call the command
   execute 'let @z = '. a:command
@@ -435,33 +485,38 @@ function! <SID>MakeChanges()
     let snip_start_tag = g:snip_start_tag
     let snip_end_tag = g:snip_end_tag
   endif
+
   if s:matchVal == ""
     return
   endif
+  call <SID>Debug("Matching on this value: ".s:matchVal)
+  call <SID>Debug("Replacing with this value: ".s:replaceVal)
   while search(snip_start_tag.s:matchVal.snip_end_tag,"w") > 0
     call setline(line("."),substitute(getline("."), snip_start_tag.s:matchVal.snip_end_tag, s:replaceVal,"g"))
   endwhile
   " Change all the tags with the same name and a command defined.
   " I.e. start tag, tag name (matchVal), element delimiter, characters not
   " whitespace and then end tag
-  " First jump back to where we were as the search doesn't wrap (get an
-  " infinite loop otherwise)
-  if s:just_expanded == 1
-    call cursor(s:curLine, 1)
-    let s:just_expanded = 0
-  else
-    call cursor(s:curLine, s:curCurs)
-  endif
+  call <SID>Debug("Searching for this string: ".snip_start_tag.s:matchVal.snip_elem_delim)
   while search(snip_start_tag.s:matchVal.snip_elem_delim,"w") > 0
     " Grab the command
-    let commandText = matchstr(getline("."),snip_elem_delim.".\\{-}".snip_end_tag, 0)
+    " We need to search from the cursor position to avoid problems when the
+    " snip_delimiter is on the line
+    let commandText = matchstr(getline("."),snip_elem_delim.".\\{-}".snip_end_tag, col("."))
+    call <SID>Debug("Found this command text: ".commandText)
     let commandToRun = strpart(commandText,1,strlen(commandText)-strlen(snip_end_tag)-1)
-    "let commandToRun = strpart(temp, 1, strlen(temp)-2)
+    call <SID>Debug("Running this command: ".commandToRun)
     let s:snip_temp = substitute(commandToRun, "\\", "\\\\\\\\","g")
     let commandResult = <SID>RunCommand(commandToRun, s:replaceVal)
-    exec "echom \"Matching: ". snip_start_tag.s:matchVal.snip_elem_delim.s:snip_temp.snip_end_tag . "\""
-    exec "echom \"Command result: ". commandResult . "\""
-    call setline(line("."),split(substitute(getline("."), '\V'.snip_start_tag.s:matchVal.snip_elem_delim.s:snip_temp.snip_end_tag, commandResult, "g"),'\n'))
+    call <SID>Debug("Got this result: ".commandResult)
+    let tagmatch = '\V'.snip_start_tag.s:matchVal.snip_elem_delim.s:snip_temp.snip_end_tag
+    let lines = split(substitute(getline("."), tagmatch, commandResult, "g"),'\n')
+    if len(lines) > 1
+      call setline(".", lines[0])
+      call append(".", lines[1:])
+    else
+      call setline(".", lines)
+    endif
   endwhile
 endfunction
 
@@ -493,7 +548,6 @@ function! <SID>ChangeVals(changed)
     let commandText = matchstr(s:line, b:search_endVal, match(s:line, snip_elem_delim, s:curCurs))
     let commandToRun = strpart(commandText,1,strlen(commandText)-strlen(snip_end_tag)+1)
     let commandMatch = substitute(commandToRun, '\', '\\\\', "g")
-    exec "echom \"command to match: ". commandMatch . "\""
     " matchVal is the same regardless of whether we changed the value or not.
     " It's always from the cursor to b:search_commandVal (since we've got a
     " command to run)
@@ -503,16 +557,28 @@ function! <SID>ChangeVals(changed)
       " The value has changed so we need to grab our current position back
       " to the start of the tag
       let replaceVal = strpart(getline("."), tagstart,s:curCurs-tagstart)
+      call <SID>Debug("User entered this value: ".replaceVal)
       let tagmatch = snip_start_tag.replaceVal.s:matchVal.snip_elem_delim.commandMatch.snip_end_tag
     else
       " The value hasn't changed so it's just the matchVal (the tag name)
       " without any quotes that are around it
       let replaceVal = substitute(s:matchVal, '^\"\(.*\)\"$', "\1", "")
+      call <SID>Debug("User did not enter a value. Replacing with this value: ".replaceVal)
       let tagmatch = snip_start_tag.s:matchVal.snip_elem_delim.commandMatch.snip_end_tag
     endif
+    call <SID>Debug("Matching on this string: ".tagmatch)
     let tagsubsitution = <SID>RunCommand(commandToRun, replaceVal)
-    call setline(".", split(substitute(getline("."), tagmatch, tagsubsitution, "g"),'\n'))
-    let s:replaceVal = tagsubsitution
+    let lines = split(substitute(getline("."), tagmatch, tagsubsitution, "g"),'\n')
+    if len(lines) > 1
+      call setline(".", lines[0])
+      call append(".", lines[1:])
+    else
+      call setline(".", lines)
+    endif
+    "let s:replaceVal = tagsubsitution
+    " We use replaceVal instead of tagsubsitution as otherwise the command
+    " result will be passed to subsequent tags
+    let s:replaceVal = replaceVal
     call <SID>MakeChanges()
   else
     " There's no command to run
@@ -647,7 +713,8 @@ function! <SID>Jumper()
   if exists("g:snip_set_textmate_cp") && g:snip_set_textmate_cp == 1
     " First we'll check that the user hasn't just typed a snippet to expand
     "
-    let word = matchstr(strpart(getline("."), 0, s:curCurs), '\k\{-}$')
+    let origword = matchstr(strpart(getline("."), 0, s:curCurs), '\k\{-}$')
+    let word = <SID>Hash(origword)
 "    " The following code is lifted wholesale from the imaps.vim script - Many
 "    " thanks for the inspiration to add the TextMate compatibility
 "    " Unless we are at the very end of the word, we need to go back in order
@@ -666,7 +733,7 @@ function! <SID>Jumper()
     if rhs != ''
       " if this is a mapping, then erase the previous part of the map
       " by also returning a number of backspaces.
-      let bkspc = substitute(word, '.', "\<bs>", "g")
+      let bkspc = substitute(origword, '.', "\<bs>", "g")
 
       let s:curCurs = s:curCurs - strlen(expand('<cword>')) - 1
       let s:just_expanded = 1
@@ -677,11 +744,9 @@ function! <SID>Jumper()
         " We're in a tag so we need to do processing
         if strpart(s:line, s:curCurs - strlen(snip_start_tag), strlen(snip_start_tag)) == snip_start_tag
           call <SID>ChangeVals(0)
-          "call <SID>NoChangedVal()
           return ''
         else
           call <SID>ChangeVals(1)
-          "call <SID>ChangedVal()
           return ''
         endif
       else
@@ -703,10 +768,8 @@ function! <SID>Jumper()
   if <SID>CheckForInTag()
     if strpart(s:line, s:curCurs - strlen(snip_start_tag), strlen(snip_start_tag)) == snip_start_tag
       call <SID>ChangeVals(0)
-      "call <SID>NoChangedVal()
     else
       call <SID>ChangeVals(1)
-      "call <SID>ChangedVal()
     endif
   else
     " Not in a tag so let's jump to the next tag
@@ -744,12 +807,17 @@ fun! D(text)
   else
     return a:text
   endif
-"  if @z != ''
-"    return @z
-"  else
-"    return a:text
-"  endif
 endfun
+
+" <SID>Hash allows the use of special characters in snippets when textmate mode
+" is used.
+" This function is lifted straight from the imaps.vim plugin. Please let me know
+" if this is against licensing.
+function! <SID>Hash(text)
+	return substitute(a:text, '\([^[:alnum:]]\)',
+				\ '\="_".char2nr(submatch(1))."_"', 'g')
+endfunction
+
 " }}}
 " Abbreviations are set up as usual but using the Iabbr command rather
 " than iabbr.  Formatting needs to be done as usual, hence the '<<'s and
