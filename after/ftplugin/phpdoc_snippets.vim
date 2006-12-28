@@ -2,14 +2,18 @@ if !exists('loaded_snippet') || &cp
     finish
 endif
 
-Snippet doc_d /**<CR>* <undocumentedConstant><CR>**/<CR>define(<>, <>);<><CR><>
-Snippet doc_vp /**<CR>* <undocumentedClassVariable><CR>*<CR>* @var <string><><CR>**/<><CR>
-Snippet doc_f /**<CR>* <undocumentedFunction><CR>*<CR>* @return <void><CR>* @author <><CR>**/<CR><>function <>(<>)<CR>{<><CR>}<CR><>
-Snippet doc_s /**<CR>* <undocumentedFunction><CR>*<CR>* @return <void><CR>* @author <><CR>**/<CR><>function <>(<>);<CR><>
-Snippet doc_h /**<CR>* <><CR>*<CR>* @author <><CR>* @version $Id$<CR>* @copyright <>, <><CR>* @package <default><CR>**/<CR><CR>/**<CR>* Define DocBlock<CR>**/<CR><CR><>
-Snippet doc_fp /**<CR>* <undocumentedFunction><CR>*<CR>* @return <void><CR>* @author <><CR>**/<><CR>
-Snippet doc_i /**<CR>* <undocumentedClass><CR>*<CR>* @package <default><CR>* @author <><CR>**/<CR>interface <><CR>{<><CR>} // END interface <><CR><>
-Snippet doc_fp /**<CR>* <undocumentedConstant><><CR>**/<><CR><>
-Snippet doc_v /**<CR>* <undocumentedClassVariable><CR>*<CR>* @var <string><CR>**/<CR><var> $<>;<><CR><>
-Snippet doc_cp /**<CR>* <undocumentedClass><CR>*<CR>* @package <default><CR>* @author <><CR>**/<>
-Snippet doc_c /**<CR>* <undocumentedClass><CR>*<CR>* @package <default><CR>* @author <><CR>**/<CR><class>class <a><CR>{<><CR>} // END <class>class <a><CR><>
+let st = g:snip_start_tag
+let et = g:snip_end_tag
+let cd = g:snip_elem_delim
+
+exec "Snippet doc_d /**<CR>* ".st."undocumentedConstant".et."<CR>**/<CR>define(".st.et.", ".st.et.");".st.et."<CR>".st.et
+exec "Snippet doc_vp /**<CR>* ".st."undocumentedClassVariable".et."<CR>*<CR>* @var ".st."string".et.st.et."<CR>**/".st.et."<CR>"
+exec "Snippet doc_f /**<CR>* ".st."undocumentedFunction".et."<CR>*<CR>* @return ".st."void".et."<CR>* @author ".st.et."<CR>**/<CR>".st.et."function ".st.et."(".st.et.")<CR>{".st.et."<CR>}<CR>".st.et
+exec "Snippet doc_s /**<CR>* ".st."undocumentedFunction".et."<CR>*<CR>* @return ".st."void".et."<CR>* @author ".st.et."<CR>**/<CR>".st.et."function ".st.et."(".st.et.");<CR>".st.et
+exec "Snippet doc_h /**<CR>* ".st.et."<CR>*<CR>* @author ".st.et."<CR>* @version $Id$<CR>* @copyright ".st.et.", ".st.et."<CR>* @package ".st."default".et."<CR>**/<CR><CR>/**<CR>* Define DocBlock<CR>**/<CR><CR>".st.et
+exec "Snippet doc_fp /**<CR>* ".st."undocumentedFunction".et."<CR>*<CR>* @return ".st."void".et."<CR>* @author ".st.et."<CR>**/".st.et."<CR>"
+exec "Snippet doc_i /**<CR>* ".st."undocumentedClass".et."<CR>*<CR>* @package ".st."default".et."<CR>* @author ".st.et."<CR>**/<CR>interface ".st.et."<CR>{".st.et."<CR>} // END interface ".st.et."<CR>".st.et
+exec "Snippet doc_fp /**<CR>* ".st."undocumentedConstant".et.st.et."<CR>**/".st.et."<CR>".st.et
+exec "Snippet doc_v /**<CR>* ".st."undocumentedClassVariable".et."<CR>*<CR>* @var ".st."string".et."<CR>**/<CR><var> $".st.et.";".st.et."<CR>".st.et
+exec "Snippet doc_cp /**<CR>* ".st."undocumentedClass".et."<CR>*<CR>* @package ".st."default".et."<CR>* @author ".st.et."<CR>**/".st.et
+exec "Snippet doc_c /**<CR>* ".st."undocumentedClass".et."<CR>*<CR>* @package ".st."default".et."<CR>* @author ".st.et."<CR>**/<CR>".st."class".et."class ".st."a".et."<CR>{".st.et."<CR>} // END ".st."class".et."class ".st."a".et."<CR>".st.et

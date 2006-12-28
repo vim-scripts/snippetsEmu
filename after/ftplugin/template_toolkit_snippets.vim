@@ -2,8 +2,12 @@ if !exists('loaded_snippet') || &cp
     finish
 endif
 
-Snippet wrap [% WRAPPER <template> %]<CR><><CR>[% END %]<CR><>
-Snippet if [% IF <condition> %]<CR><><CR>[% ELSE %]<CR><><CR>[% END %]<CR><>
-Snippet unl [% UNLESS <condition> %]<CR><><CR>[% END %]<CR><>
-Snippet inc [% INCLUDE <template> %]<CR><>
-Snippet for  [% FOR <var> IN <set> %]<CR><><CR>[% END %]<>
+let st = g:snip_start_tag
+let et = g:snip_end_tag
+let cd = g:snip_elem_delim
+
+exec "Snippet wrap [% WRAPPER ".st."template".et." %]<CR>".st.et."<CR>[% END %]<CR>".st.et
+exec "Snippet if [% IF ".st."condition".et." %]<CR>".st.et."<CR>[% ELSE %]<CR>".st.et."<CR>[% END %]<CR>".st.et
+exec "Snippet unl [% UNLESS ".st."condition".et." %]<CR>".st.et."<CR>[% END %]<CR>".st.et
+exec "Snippet inc [% INCLUDE ".st."template".et." %]<CR>".st.et
+exec "Snippet for  [% FOR ".st."var".et." IN ".st."set".et." %]<CR>".st.et."<CR>[% END %]".st.et

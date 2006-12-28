@@ -2,16 +2,20 @@ if !exists('loaded_snippet') || &cp
     finish
 endif
 
-Snippet image_tag image_tag('<imageName>'<>)<>
-Snippet get public function get<> ()<CR>{<CR>return $this-><>;<CR>}<CR><CR><>
-Snippet link_to link_to('<linkName>', '<moduleName>/<actionName><>')<>
-Snippet sexecute public function execute<Action>()<CR>{<CR><><CR>}<CR><>
-Snippet set public function set<> ($<>)<CR>{<CR>$this-><> = <>;<CR>}<CR><CR><>
-Snippet execute /**<CR>* <className><CR>*<CR>*/<CR>public function execute<Action>()<CR>{<CR><><CR>}<CR><>
-Snippet tforeach <?php foreach ($<variable> as $<key><>): ?><CR><><CR><?php endforeach ?><CR><>
-Snippet getparam $this->getRequestParameter('<id>')<>
-Snippet div <div<>><CR><><CR></div><>
-Snippet tif <?php if (<condition>): ?><CR><><CR><?php endif ?><CR><>
-Snippet setget public function set<var> (<arg>)<CR>{<CR>$this-><arg> = <arg>;<CR>}<CR><CR>public function get<var> ()<CR>{<CR>return $this-><var>;<CR>}<CR><CR><>
-Snippet echo <?php echo <> ?><>
-Snippet tfor <?php for($<i> = <>; $<i> <= <>; $<i>++): ?><CR><><CR><?php endfor ?><CR><>
+let st = g:snip_start_tag
+let et = g:snip_end_tag
+let cd = g:snip_elem_delim
+
+exec "Snippet image_tag image_tag('".st."imageName".et."'".st.et.")".st.et
+exec "Snippet get public function get".st.et." ()<CR>{<CR>return $this->".st.et.";<CR>}<CR><CR>".st.et
+exec "Snippet link_to link_to('".st."linkName".et."', '".st."moduleName".et."/".st."actionName".et.st.et."')".st.et
+exec "Snippet sexecute public function execute<Action>()<CR>{<CR>".st.et."<CR>}<CR>".st.et
+exec "Snippet set public function set".st.et." ($".st.et.")<CR>{<CR>$this->".st.et." = ".st.et.";<CR>}<CR><CR>".st.et
+exec "Snippet execute /**<CR>* ".st."className".et."<CR>*<CR>*/<CR>public function execute<Action>()<CR>{<CR>".st.et."<CR>}<CR>".st.et
+exec "Snippet tforeach <?php foreach ($".st."variable".et." as $".st."key".et.st.et."): ?><CR>".st.et."<CR><?php endforeach ?><CR>".st.et
+exec "Snippet getparam $this->getRequestParameter('".st."id".et."')".st.et
+exec "Snippet div <div".st.et."><CR>".st.et."<CR></div>".st.et
+exec "Snippet tif <?php if (".st."condition".et."): ?><CR>".st.et."<CR><?php endif ?><CR>".st.et
+exec "Snippet setget public function set".st."var".et." (".st."arg".et.")<CR>{<CR>$this->".st."arg".et." = ".st."arg".et.";<CR>}<CR><CR>public function get".st."var".et." ()<CR>{<CR>return $this->".st."var".et.";<CR>}<CR><CR>".st.et
+exec "Snippet echo <?php echo ".st.et." ?>".st.et
+exec "Snippet tfor <?php for($".st."i".et." = ".st.et."; $".st."i".et." <= ".st.et."; $".st."i".et."++): ?><CR>".st.et."<CR><?php endfor ?><CR>".st.et

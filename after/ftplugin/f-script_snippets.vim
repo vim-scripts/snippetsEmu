@@ -2,9 +2,13 @@ if !exists('loaded_snippet') || &cp
     finish
 endif
 
-Snippet tbd to:<> by:<> do:[ <:D(':i')> |<CR><><CR>].<>
-Snippet it ifTrue:[<CR><><CR>].<>
-Snippet ift ifFalse:[<CR><><CR>] ifTrue:[<CR><><CR>].<>
-Snippet itf ifTrue:[<CR><><CR>] ifFalse:[<CR><><CR>].<>
-Snippet td to:<> do:[<> <:D(':i')> |<CR><><CR>].<>
-Snippet if ifFalse:[<CR><><CR>].<>
+let st = g:snip_start_tag
+let et = g:snip_end_tag
+let cd = g:snip_elem_delim
+
+exec "Snippet tbd to:".st.et." by:".st.et." do:[ ".st.":D(':i')".et." |<CR>".st.et."<CR>].".st.et
+exec "Snippet it ifTrue:[<CR>".st.et."<CR>].".st.et
+exec "Snippet ift ifFalse:[<CR>".st.et."<CR>] ifTrue:[<CR>".st.et."<CR>].".st.et
+exec "Snippet itf ifTrue:[<CR>".st.et."<CR>] ifFalse:[<CR>".st.et."<CR>].".st.et
+exec "Snippet td to:".st.et." do:[".st.et." ".st.et." |<CR>".st.et."<CR>].".st.et
+exec "Snippet if ifFalse:[<CR>".st.et."<CR>].".st.et

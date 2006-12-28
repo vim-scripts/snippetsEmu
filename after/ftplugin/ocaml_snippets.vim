@@ -2,21 +2,25 @@ if !exists('loaded_snippet') || &cp
     finish
 endif
 
-Snippet Queue Queue.fold <:D('(fun b v ->)')> <base> <q><CR><>
-Snippet Nativeint Nativeint.abs <ni><>
-Snippet Printexc Printexc.print <fn> <x><>
-Snippet Sys Sys.Signal_ignore<>
-Snippet Hashtbl Hashtbl.iter <:D('(fun k v -> )')> <h><>
-Snippet Array Array.map <:D('(fun a -> )')> <arr><>
-Snippet Printf Printf.fprintf <buf> "<format>" <args><>
-Snippet Stream Stream.iter <:D('(fun x -> )')> <stream><>
-Snippet Buffer Buffer.add_channel <buf> <ic> <len><>
-Snippet Int32 Int32.abs <i32><>
-Snippet List List.rev_map <:D('(fun x -> )')> <lst><>
-Snippet Scanf Scanf.bscaf <sbuf> "<format>" <f><>
-Snippet Int64 Int64.abs <i64><>
-Snippet Map Map.Make <:D('(Ord : OrderedType)')><>
-Snippet String String.iter <:D('(fun c -> )')> <str><>
-Snippet Genlex Genlex.make_lexer <"tok_lst"> <"char_stream"><>
-Snippet for for <i}> = <> to <> do<CR><><CR>done<CR><>
-Snippet Stack Stack.iter <:D('(fun x -> )')> <stk><>
+let st = g:snip_start_tag
+let et = g:snip_end_tag
+let cd = g:snip_elem_delim
+
+exec "Snippet Queue Queue.fold ".st.":D('(fun b v ->)')".et." ".st."base".et." ".st."q".et."<CR>".st.et
+exec "Snippet Nativeint Nativeint.abs ".st."ni".et.st.et
+exec "Snippet Printexc Printexc.print ".st."fn".et." ".st."x".et.st.et
+exec "Snippet Sys Sys.Signal_ignore".st.et
+exec "Snippet Hashtbl Hashtbl.iter ".st.":D('(fun k v -> )')".et." ".st."h".et.st.et
+exec "Snippet Array Array.map ".st.":D('(fun a -> )')".et." ".st."arr".et.st.et
+exec "Snippet Printf Printf.fprintf ".st."buf".et." \"".st."format".et."\" ".st."args".et.st.et
+exec "Snippet Stream Stream.iter ".st.":D('(fun x -> )')".et." ".st."stream".et.st.et
+exec "Snippet Buffer Buffer.add_channel ".st."buf".et." ".st."ic".et." ".st."len".et.st.et
+exec "Snippet Int32 Int32.abs ".st."i32".et.st.et
+exec "Snippet List List.rev_map ".st.":D('(fun x -> )')".et." ".st."lst".et.st.et
+exec "Snippet Scanf Scanf.bscaf ".st."sbuf".et." \"".st."format".et."\" ".st."f".et.st.et
+exec "Snippet Int64 Int64.abs ".st."i64".et.st.et
+exec "Snippet Map Map.Make ".st.":D('(Ord : OrderedType)')".et.st.et
+exec "Snippet String String.iter ".st.":D('(fun c -> )')".et." ".st."str".et.st.et
+exec "Snippet Genlex Genlex.make_lexer ".st."\"tok_lst\"".et." ".st."\"char_stream\"".et.st.et
+exec "Snippet for for ".st."i}".et." = ".st.et." to ".st.et." do<CR>".st.et."<CR>done<CR>".st.et
+exec "Snippet Stack Stack.iter ".st.":D('(fun x -> )')".et." ".st."stk".et.st.et

@@ -3,15 +3,22 @@ if !exists('loaded_snippet') || &cp
 endif
 
 function! Onload()
-    return 'onload="<>"'
+    let st = g:snip_start_tag
+    let et = g:snip_end_tag
+    return 'onload="'.st.et.'"'
 endfunction
 
 function! Id()
-    return ' id="<>"'
+    let st = g:snip_start_tag
+    let et = g:snip_end_tag
+    return ' id="'.st.et.'"'
 endfunction
 
 function! Cellspacing()
-    return ' cellspacing="<:D('5')>"'
+    let st = g:snip_start_tag
+    let et = g:snip_end_tag
+    let cd = g:snip_elem_delim
+    return ' cellspacing="'.st.cd."D('5')".et.'"'
 endfunction
 
 function! FileNoExt()
@@ -19,25 +26,37 @@ function! FileNoExt()
 endfunction
 
 function! Target()
-    return ' target="<>"'
+    let st = g:snip_start_tag
+    let et = g:snip_end_tag
+    return ' target="'.st.et.'"'
 endfunction
 
-Snippet doctype <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN"<CR><Tab>"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd"><CR><>
-Snippet head <head><CR><Tab><meta http-equiv="Content-type" content="text/html; charset=utf-8" /><CR><Tab><title><:substitute(expand('%'),'\(.*\)\..*$','\1','')></title><CR><Tab><><CR></head><CR><>
-Snippet script <script type="text/javascript" language="javascript" charset="utf-8"><CR>// <![CDATA[<CR><Tab><><CR>// ]]><CR></script><CR><>
-Snippet title <title><:substitute(expand('%'),'\(.*\)\..*$','\1','')></title>
-Snippet body <body id="<:FileNoExt()>" <:Onload()><CR><><CR></body><CR><>
-Snippet scriptsrc <script src="<>" type="text/javascript" language="<:D('javascript')>" charset="<:D('utf-8')>"></script><CR><>
-Snippet textarea <textarea name="<:D('Name')>" rows="<:D('8')>" cols="<:D'(40')>"><></textarea><CR><>
-Snippet meta <meta name="<:D('name')>" content="<:D('content')>" /><CR><>
-Snippet movie <object width="<>" height="<>"<CR>classid="clsid:02BF25D5-8C17-4B23-BC80-D3488ABDDC6B"<CR>codebase="http://www.apple.com/qtactivex/qtplugin.cab"><CR><Tab><param name="src"<CR>value="<>" /><CR><Tab><param name="controller" value="<>" /><CR><param name="autoplay" value="<>" /><CR><Tab><embed src="<:D('movie.mov')>"<CR><Tab>width="<:D('320')>" height="<D('240')>"<CR><Tab>controller="<:D('true')>" autoplay="<:D('true')>"<CR><Tab><Tab>scale="tofit" cache="true"<CR><Tab><Tab>pluginspage="http://www.apple.com/quicktime/download/"<CR><Tab>/><CR></object><CR><>
-Snippet div <div<:Id()>><CR><><CR></div><CR><>
-Snippet mailto <a href="mailto:<>?subject=<:D('feedback')>"><:D('email me')></a><>
-Snippet table <table border="<:D('0')>"<:Cellspacing()> cellpadding="<:D('5')>"><CR><Tab><tr><th><:D('Header')></th></tr><CR><Tab><tr><td><></td></tr><CR></table>
-Snippet link <link rel="<:D('stylesheet')>" href="<:D('/css/master.css')>" type="text/css" media="<:D('screen')>" title="<>" charset="<:D('utf-8')>" />
-Snippet form <form action="<:D(FileNoExt().'_submit')>" method="<:D('get')>"><CR><Tab><><CR><CR><Tab><p><input type="submit" value="Continue &rarr;" /></p><CR></form><CR><>
-Snippet ref <a href="<>"><></a><>
-Snippet h1 <h1 id="<>"><></h1><>
-Snippet input <input type="<:D('text/submit/hidden/button')>" name="<>" value="<>" <>/><>
-Snippet style <style type="text/css" media="screen"><CR>/* <![CDATA[ */<CR><Tab><><CR>/* ]]> */<CR></style><CR><>
-Snippet base <base href="<>"<:Target()> /><>
+let st = g:snip_start_tag
+let et = g:snip_end_tag
+let cd = g:snip_elem_delim
+
+exec "Snippet doctype <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Frameset//EN\"<CR><TAB>\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd\"><CR>".st.et
+exec "Snippet doc4s <!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\"<CR>\"http://www.w3.org/TR/html4/strict.dtd\"><CR>".st.et
+exec "Snippet doc4t <!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"<CR>\"http://www.w3.org/TR/html4/loose.dtd\"><CR>".st.et
+exec "Snippet doc4f <!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\"<CR>\"http://www.w3.org/TR/html4/frameset.dtd\"><CR>".st.et
+exec "Snippet docxs <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML Strict//EN\"<CR>\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\"><CR>".st.et
+exec "Snippet docxt <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML Transitional//EN\"<CR>\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><CR>".st.et
+exec "Snippet docxf <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML Frameset//EN\"<CR>\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd\"><CR>".st.et
+exec "Snippet head <head><CR><TAB><meta http-equiv=\"Content-type\" content=\"text/html; charset=utf-8\" /><CR><TAB><title>".st.":substitute(expand('%'),'\\(.*\\)\\..*$','\\1','')".et."</title><CR><TAB>".st.et."<CR></head><CR>".st.et
+exec "Snippet script <script type=\"text/javascript\" language=\"javascript\" charset=\"utf-8\"><CR>// <![CDATA[<CR><TAB>".st.et."<CR>// ]]><CR></script><CR>".st.et
+exec "Snippet title <title>".st.":substitute(expand('%'),'\\(.*\\)\\..*$','\\1','')".et."</title>"
+exec "Snippet body <body id=\"".st.":FileNoExt()".et."\" ".st.":Onload()".et."<CR>".st.et."<CR></body><CR>".st.et
+exec "Snippet scriptsrc <script src=\"".st.et."\" type=\"text/javascript\" language=\"".st.":D('javascript')".et."\" charset=\"".st.":D('utf-8')".et."\"></script><CR>".st.et
+exec "Snippet textarea <textarea name=\"".st.":D('Name')".et."\" rows=\"".st.":D('8')".et."\" cols=\"".st.":D'(40')".et."\">".st.et."</textarea><CR>".st.et
+exec "Snippet meta <meta name=\"".st.":D('name')".et."\" content=\"".st.":D('content')".et."\" /><CR>".st.et
+exec "Snippet movie <object width=\"".st.et."\" height=\"".st.et."\"<CR>classid=\"clsid:02BF25D5-8C17-4B23-BC80-D3488ABDDC6B\"<CR>codebase=\"http://www.apple.com/qtactivex/qtplugin.cab\"><CR><TAB><param name=\"src\"<CR>value=\"".st.et."\" /><CR><TAB><param name=\"controller\" value=\"".st.et."\" /><CR><param name=\"autoplay\" value=\"".st.et."\" /><CR><TAB><embed src=\"".st.":D('movie.mov')".et."\"<CR><TAB>width=\"".st.":D('320')".et."\" height=\"".st."D('240')".et."\"<CR><TAB>controller=\"".st.":D('true')".et."\" autoplay=\"".st.":D('true')".et."\"<CR><TAB><TAB>scale=\"tofit\" cache=\"true\"<CR><TAB><TAB>pluginspage=\"http://www.apple.com/quicktime/download/\"<CR><TAB>/><CR></object><CR>".st.et
+exec "Snippet div <div".st.":Id()".et."><CR>".st.et."<CR></div><CR>".st.et
+exec "Snippet mailto <a href=\"mailto:".st.et."?subject=".st.":D('feedback')".et."\">".st.":D('email me')".et."</a>".st.et
+exec "Snippet table <table border=\"".st.":D('0')".et."\"".st.":Cellspacing()".et." cellpadding=\"".st.":D('5')".et."\"><CR><TAB><tr><th><:D('Header')".et."</th></tr><CR><TAB><tr><td>".st.et."</td></tr><CR></table>"
+exec "Snippet link <link rel=\"".st.":D('stylesheet')".et."\" href=\"".st.":D('/css/master.css')".et."\" type=\"text/css\" media=\"".st.":D('screen')".et."\" title=\"".st.et."\" charset=\"".st.":D('utf-8')".et."\" />"
+exec "Snippet form <form action=\"".st.":D(FileNoExt().'_submit')".et."\" method=\"".st.":D('get')".et."\"><CR><TAB>".st.et."<CR><CR><TAB><p><input type=\"submit\" value=\"Continue &rarr;\" /></p><CR></form><CR>".st.et
+exec "Snippet ref <a href=\"".st.et."\">".st.et."</a>".st.et
+exec "Snippet h1 <h1 id=\"".st.et."\">".st.et."</h1>".st.et
+exec "Snippet input <input type=\"".st.":D('text/submit/hidden/button')".et."\" name=\"".st.et."\" value=\"".st.et."\" ".st.et."/>".st.et
+exec "Snippet style <style type=\"text/css\" media=\"screen\"><CR>/* <![CDATA[ */<CR><TAB>".st.et."<CR>/* ]]> */<CR></style><CR>".st.et
+exec "Snippet base <base href=\"".st.et."\"".st.":Target()".et." />".st.et
