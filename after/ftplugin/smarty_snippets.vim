@@ -11,13 +11,13 @@ exec "Snippet |regex_replace |regex_replace:\"".st."regex".et."\":\"".st.et."\""
 exec "Snippet {counter {counter name=\"#INSERTION#\" start=1 skip=1 direction=\"up\" print=true<CR>assign=\"foo\" }<CR><CR>{counter}<CR>".st.et
 exec "Snippet {eval {eval var=\"#SELSTART#{template_format}#SELEND#\" assign=varname} <CR>".st.et
 "Snippet |date_format |date_format:"${1:strftime() formatting}" <CR><{}>
-exec "Snippet |truncate |truncate:".st.":D('80')".et.":".st.et.":".st."false".et.""
+exec "Snippet |truncate |truncate:".st.et.":".st.et.":".st."false".et.""
 exec "Snippet {if {if ".st."varname".et.st.et."<CR>\"".st."foo".et."\"}<CR><CR>{* $varname can also be a php call *}<CR><CR>".st.et."<CR><CR>{/if}<CR>".st.et
 "Snippet |string_format |string_format:"${1:sprintf formatting}" <CR><{}>
 exec "Snippet {assign {assign var=".st.et." value=\"".st.et."\"}".st.et
 exec "Snippet {foreach {foreach from=".st."varname".et." item=i [key=k name=\"\"] }<CR><CR>".st.et."<CR><CR>{/foreach}<CR><CR>".st.et
 exec "Snippet {capture {capture name=#INSERTION#}<CR><CR>#SELECT#<CR><CR>{/capture}<CR>".st.et
-exec "Snippet |wordwrap |wordwrap:".st.":D('80')".et.":\"".st.et."\":".st.et
+exec "Snippet |wordwrap |wordwrap:".st.et.":\"".st.et."\":".st.et
 exec "Snippet |spacify |spacify:\"".st.et."\"".st.et." "
 exec "Snippet |default |default:\"".st.et."\"".st.et
 exec "Snippet {debug {debug output=\"#SELSTART#".st.et."#SELEND#\" }".st.et

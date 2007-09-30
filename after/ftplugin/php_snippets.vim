@@ -6,8 +6,8 @@ let st = g:snip_start_tag
 let et = g:snip_end_tag
 let cd = g:snip_elem_delim
 
-exec "Snippet elseif elseif ( ".st."condition".et." )<CR>{<CR>".st.et."<CR>}<CR>".st.et
-exec "Snippet do do<CR>{<CR>".st.et."<CR><CR>} while ( ".st.":D('$a <= 10')".et." );<CR>".st.et
+exec "Snippet elseif elseif ( ".st."condition".et." )<CR>{<CR><Tab>".st.et."<CR>}<CR>".st.et
+exec "Snippet do do<CR>{<CR>".st.et."<CR><CR>} while ( ".st.et." );<CR>".st.et
 exec "Snippet reql require_once( '".st."file".et."' );<CR>".st.et
 exec "Snippet if? $".st."retVal".et." = ( ".st."condition".et." ) ? ".st."a".et." : ".st."b".et." ;<CR>".st.et
 exec "Snippet php <?php<CR><CR>".st.et."<CR><CR>?>"

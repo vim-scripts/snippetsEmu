@@ -29,7 +29,7 @@ let st = g:snip_start_tag
 let et = g:snip_end_tag
 let cd = g:snip_elem_delim
 
-exec "Snippet mmodel class ".st.et."(models.Model):<CR><Tab>\"\"\"".st.":D('model description')".et."\"\"\"<CR><Tab>".st.et." = ".st.et."<CR><CR><Tab>class Admin:<CR><Tab><Tab>pass<CR><CR><Tab>def __str__(self):<CR><Tab><Tab>return \"".st."s".et."\" % ".st."s:DjangoArgList(Count(@z, '%[^%]'))".et."<CR>".st.et
+exec "Snippet mmodel class ".st.et."(models.Model):<CR>\"\"\"".st.et."\"\"\"<CR>".st.et." = ".st.et."<CR><CR>class Admin:<CR>pass<CR><CR>def __str__(self):<CR>return \"".st."s".et."\" % ".st."s:DjangoArgList(Count(@z, '%[^%]'))".et."<CR>".st.et
 exec "Snippet mauto models.AutoField(".st.et.")".st.et
 exec "Snippet mbool models.BooleanField()".st.et
 exec "Snippet mchar models.CharField(maxlength=".st."50".et.st.et.")".st.et

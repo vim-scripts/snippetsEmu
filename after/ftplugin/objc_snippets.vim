@@ -17,9 +17,6 @@ function! Count(haystack, needle)
 endfunction
 
 function! ObjCArgList(count)
-    " This needs to be Python specific as print expects a
-    " tuple and an empty tuple looks like this (,) so we'll need to make a
-    " special case for it
     let st = g:snip_start_tag
     let et = g:snip_end_tag
 
