@@ -162,26 +162,6 @@ These will be added to the 'Snippets' menu which is available in Normal mode.
 Selecting options from the menu will source the file and hence load any
 snippets defined within it.
 
-                                                  *snippets-commands-overview*
-                                                 *defining-snippets* *Snippet*
-Snippet [<trigger> [<definition>]]
-               Without arguments the Snippet command will list all of the
-               currently defined triggers for the current buffer.
-
-               With just a (valid) trigger as the first argument the command
-               will show the definition for that trigger. NB. The command
-               supports auto-complete so one can use <Tab> to cycle through
-               the currently defined triggers.
-
-               With both a trigger and a definition provided the command will
-               create a new snippet as detailed above.
-
-                                              *removing-snippets* *DelSnippet*
-DelSnippet <trigger>
-               The DelSnippet command will remove the appropriate snippet from
-               the current set defined in the buffer. Auto-complete can be
-               used to cycle through the currently defined triggers.
-
                                            *creating-snippets* *CreateSnippet*
 [range]CreateSnippet
                The CreateSnippet command allows the simple creation of
@@ -341,8 +321,8 @@ Ori Avtalion - Improvements to Snippet command
 Freddy Vulto - Improved behaviour
 Andy Block - Bug with commands on same line. This is why I should do better
 test suites.
-Priit Tamboom - Bug when 'h' and 'l' are remapped.
-Rick Denatale - Added DelSnippet command to remove snippets.
+bzklrm - Removal of some normal commands
+Priit Tamboom - Sorting out left and right mappings
 
 Documentation:
 Panos Laganakos - Greek translation (coming soon)
@@ -350,10 +330,8 @@ Panos Laganakos - Greek translation (coming soon)
 Bundles:
 Panos Laganakos - Python snippets
 Alex Pounds - Django snippets
-Packetwhore - C snippets updates
-Golubev Nikolay - C snippets updates
-Thiago Salves - C snippets update
-KnipKnap - Python snippets
+Chris Lasher - Python snippets
+knipknap - Python snippets
 
 ==============================================================================
 SNIPPETSEMU KNOWN BUGS                  		   *snippets_emu-bugs*

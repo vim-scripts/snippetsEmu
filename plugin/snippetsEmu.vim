@@ -106,7 +106,7 @@ if (exists('loaded_snippet') || &cp) && !s:debug
   finish
 endif
 
-call s:Debug("","Started the plugin")
+"call s:Debug("","Started the plugin")
 
 let loaded_snippet=1
 " {{{ Set up variables
@@ -126,12 +126,12 @@ if !exists("g:snippetsEmu_key")
   let g:snippetsEmu_key = "<Tab>"
 endif
 
-call s:Debug("", "Set variables")
+"call s:Debug("", "Set variables")
 
 " }}}
 " {{{ Set up menu
 for def_file in split(globpath(&rtp, "after/ftplugin/*_snippets.vim"), '\n')
-  call s:Debug("","Adding ".def_file." definitions to menu")
+  "call s:Debug("","Adding ".def_file." definitions to menu")
   let snip = substitute(def_file, '.*[\\/]\(.*\)_snippets.vim', '\1', '')
   exec "nmenu <silent> S&nippets.".snip." :source ".def_file."<CR>"
 endfor
@@ -144,8 +144,12 @@ function! s:GetSuperTabSNR()
   redir END
   let funclist = @a
   let @a = a_sav
-  let func = split(split(matchstr(funclist,'.SNR.\{-}SuperTab(command)'),'\n')[-1])[1]
-  return matchlist(func, '\(.*\)S')[1]
+  try
+    let func = split(split(matchstr(funclist,'.SNR.\{-}SuperTab(command)'),'\n')[-1])[1]
+    return matchlist(func, '\(.*\)S')[1]
+  catch /E684/
+  endtry
+  return ""
 endfunction
 
 function! s:SetupSupertab()
@@ -153,10 +157,14 @@ function! s:SetupSupertab()
     let s:supInstalled = 0
   endif
   if s:supInstalled == 1 || globpath(&rtp, 'plugin/supertab.vim') != ""
-    call s:Debug("SetupSupertab", "Supertab installed")
+    "call s:Debug("SetupSupertab", "Supertab installed")
     let s:SupSNR = s:GetSuperTabSNR()
     let s:supInstalled = 1
-    let s:done_remap = 0
+    if s:SupSNR != ""
+      let s:done_remap = 1
+    else
+      let s:done_remap = 0
+    endif
   endif
 endfunction
 
@@ -180,7 +188,7 @@ endfunction
 
 call s:SnipMapKeys()
 
-call s:Debug("", "Mapped keys")
+"call s:Debug("", "Mapped keys")
 
 " }}}
 " {{{ SetLocalTagVars()
@@ -261,16 +269,14 @@ endfunction
 " {{{ DeleteEmptyTag 
 function! s:DeleteEmptyTag()
   let [snip_start_tag, snip_elem_delim, snip_end_tag] = s:SetLocalTagVars()
-  for i in range(s:StrLen(snip_start_tag) + s:StrLen(snip_end_tag))
-    normal x
-  endfor
+  exec "normal zv".(s:StrLen(snip_start_tag) + s:StrLen(snip_end_tag))."x"
 endfunction
 " }}}
 " {{{ SetUpTags()
 function! s:SetUpTags()
   let [snip_start_tag, snip_elem_delim, snip_end_tag] = s:SetLocalTagVars()
   if (strpart(getline("."), col(".")+strlen(snip_start_tag)-1, strlen(snip_end_tag)) == snip_end_tag)
-    call s:Debug("SetUpTags","Found an empty tag")
+    "call s:Debug("SetUpTags","Found an empty tag")
     let b:tag_name = ""
     if col(".") + s:StrLen(snip_start_tag.snip_end_tag) == s:StrLen(getline("."))
       " We delete the empty tag here as otherwise we can't determine whether we
@@ -292,7 +298,7 @@ function! s:SetUpTags()
   else
     " Not on an empty tag so it must be a normal tag
     let b:tag_name = s:ChopTags(matchstr(getline("."),b:search_str,col(".")-1))
-    call s:Debug("SetUpTags","On a tag called: ".b:tag_name)
+    "call s:Debug("SetUpTags","On a tag called: ".b:tag_name)
 
 "    Check for exclusive selection mode. If exclusive is not set then we need to
 "    move back a character.
@@ -303,14 +309,14 @@ function! s:SetUpTags()
     endif
 
     let start_skip = repeat("\<Right>",s:StrLen(snip_start_tag)+1)
-    call s:Debug("SetUpTags","Start skip is: ".start_skip)
-    call s:Debug("SetUpTags","Col() is: ".col("."))
+    "call s:Debug("SetUpTags","Start skip is: ".start_skip)
+    "call s:Debug("SetUpTags","Col() is: ".col("."))
     if col(".") == 1
-      call s:Debug("SetUpTags","We're at the start of the line so don't need to skip the first char of start tag")
+      "call s:Debug("SetUpTags","We're at the start of the line so don't need to skip the first char of start tag")
       let start_skip = strpart(start_skip, 0, strlen(start_skip)-strlen("\<Right>"))
-      call s:Debug("SetUpTags","Start skip is now: ".start_skip)
+      "call s:Debug("SetUpTags","Start skip is now: ".start_skip)
     endif
-    call s:Debug("SetUpTags","Returning: \<Esc>".start_skip."v/".snip_end_tag."\<CR>".end_skip."\<C-g>")
+    "call s:Debug("SetUpTags","Returning: \<Esc>".start_skip."v/".snip_end_tag."\<CR>".end_skip."\<C-g>")
     return "\<Esc>".start_skip."v/".snip_end_tag."\<CR>".end_skip."\<C-g>"
   endif
 endfunction
@@ -318,23 +324,19 @@ endfunction
 " {{{ NextHop() - Jump to the next tag if one is available
 function! <SID>NextHop()
   let [snip_start_tag, snip_elem_delim, snip_end_tag] = s:SetLocalTagVars()
-  call s:Debug("NextHop", "Col() is: ".col("."))
-  call s:Debug("NextHop", "Position of next match = ".match(getline("."), b:search_str))
+  "call s:Debug("NextHop", "Col() is: ".col("."))
+  "call s:Debug("NextHop", "Position of next match = ".match(getline("."), b:search_str))
   " First check to see if we have any tags on lines above the current one
-  if search(b:search_str, "bnW") != 0
-    " We have previous tags, so we'll jump to the start
-    normal gg
-  endif
   " If the first match is after the current cursor position or not on this
   " line...
   if match(getline("."), b:search_str) >= col(".") || match(getline("."), b:search_str) == -1
     " Perform a search to jump to the next tag
-    call s:Debug("NextHop", "Seaching for a tag")
+    "call s:Debug("NextHop", "Seaching for a tag")
     if search(b:search_str) != 0
       return s:SetUpTags()
     else
       " there are no more matches
-      call s:Debug("NextHop", "No more tags in the buffer")
+      "call s:Debug("NextHop", "No more tags in the buffer")
       " Restore hlsarch and @/
       call s:RestoreSearch()
       return ''
@@ -342,13 +344,13 @@ function! <SID>NextHop()
   else
     " The match on the current line is on or before the cursor, so we need to
     " move the cursor back
-    call s:Debug("NextHop", "Moving the cursor back")
-    call s:Debug("NextHop", "Col is: ".col("."))
-    call s:Debug("NextHop", "Moving back to column: ".match(getline("."), b:search_str))
+    "call s:Debug("NextHop", "Moving the cursor back")
+    "call s:Debug("NextHop", "Col is: ".col("."))
+    "call s:Debug("NextHop", "Moving back to column: ".match(getline("."), b:search_str))
     while col(".") > match(getline("."), b:search_str) + 1
-      normal h
+      call cursor(0,col('.')-1)
     endwhile
-    call s:Debug("NextHop", "Col is now: ".col("."))
+    "call s:Debug("NextHop", "Col is now: ".col("."))
     " Now we just set up the tag as usual
     return s:SetUpTags()
   endif
@@ -357,7 +359,7 @@ endfunction
 " {{{ RunCommand() - Execute commands stored in tags
 function! s:RunCommand(command, z)
   let [snip_start_tag, snip_elem_delim, snip_end_tag] = s:SetLocalTagVars()
-  call s:Debug("RunCommand", "RunCommand was passed this command: ".a:command." and this value: ".a:z)
+  "call s:Debug("RunCommand", "RunCommand was passed this command: ".a:command." and this value: ".a:z)
   if a:command == ''
     return a:z
   endif
@@ -379,19 +381,19 @@ function! s:MakeChanges()
   let [snip_start_tag, snip_elem_delim, snip_end_tag] = s:SetLocalTagVars()
 
   if b:tag_name == ""
-    call s:Debug("MakeChanges", "Nothing to do: tag_name is empty")
+    "call s:Debug("MakeChanges", "Nothing to do: tag_name is empty")
     return
   endif
 
   let tagmatch = '\V'.snip_start_tag.b:tag_name.snip_end_tag
 
-  call s:Debug("MakeChanges", "Matching on this value: ".tagmatch)
-  call s:Debug("MakeChanges", "Replacing with this value: ".s:replaceVal)
+  "call s:Debug("MakeChanges", "Matching on this value: ".tagmatch)
+  "call s:Debug("MakeChanges", "Replacing with this value: ".s:replaceVal)
 
   try
-    call s:Debug("MakeChanges", "Running these commands: ".join(b:command_dict[b:tag_name], "', '"))
+    "call s:Debug("MakeChanges", "Running these commands: ".join(b:command_dict[b:tag_name], "', '"))
   catch /E175/
-    call s:Debug("MakeChanges", "Could not find this key in the dict: ".b:tag_name)
+    "call s:Debug("MakeChanges", "Could not find this key in the dict: ".b:tag_name)
   endtry
 
   let ind = 0
@@ -399,9 +401,9 @@ function! s:MakeChanges()
     try
       let commandResult = s:RunCommand(b:command_dict[b:tag_name][0], s:replaceVal)
     catch /E175/
-      call s:Debug("MakeChanges", "Could not find this key in the dict: ".b:tag_name)
+      "call s:Debug("MakeChanges", "Could not find this key in the dict: ".b:tag_name)
     endtry
-    call s:Debug("MakeChanges", "Got this result: ".commandResult)
+    "call s:Debug("MakeChanges", "Got this result: ".commandResult)
     let lines = split(substitute(getline("."), tagmatch, commandResult, ''),'\n')
     if len(lines) > 1
       call setline(".", lines[0])
@@ -412,7 +414,7 @@ function! s:MakeChanges()
     try
       unlet b:command_dict[b:tag_name][0]
     catch /E175/
-      call s:Debug("MakeChanges", "Could not find this key in the dict: ".b:tag_name)
+      "call s:Debug("MakeChanges", "Could not find this key in the dict: ".b:tag_name)
     endtry
   endwhile
 endfunction
@@ -427,20 +429,20 @@ function! s:ChangeVals(changed)
     let s:CHANGED_VAL = 0
   endif
 
-  call s:Debug("ChangeVals", "CHANGED_VAL: ".s:CHANGED_VAL)
-  call s:Debug("ChangeVals", "b:tag_name: ".b:tag_name)
+  "call s:Debug("ChangeVals", "CHANGED_VAL: ".s:CHANGED_VAL)
+  "call s:Debug("ChangeVals", "b:tag_name: ".b:tag_name)
   let elem_match = match(s:line, snip_elem_delim, s:curCurs)
   let tagstart = strridx(getline("."), snip_start_tag,s:curCurs)+strlen(snip_start_tag)
 
-  call s:Debug("ChangeVals", "About to access b:command_dict")
+  "call s:Debug("ChangeVals", "About to access b:command_dict")
   try
     let commandToRun = b:command_dict[b:tag_name][0]
-    call s:Debug("ChangeVals", "Accessed command_dict")
-    call s:Debug("ChangeVals", "Running this command: ".commandToRun)
+    "call s:Debug("ChangeVals", "Accessed command_dict")
+    "call s:Debug("ChangeVals", "Running this command: ".commandToRun)
     unlet b:command_dict[b:tag_name][0]
-    call s:Debug("ChangeVals", "Command list is now: ".join(b:command_dict[b:tag_name], "', '"))
+    "call s:Debug("ChangeVals", "Command list is now: ".join(b:command_dict[b:tag_name], "', '"))
   catch /E175/
-    call s:Debug("ChangeVals", "Could not find this key in the dict: ".b:tag_name)
+    "call s:Debug("ChangeVals", "Could not find this key in the dict: ".b:tag_name)
   endtry
 
   let commandMatch = substitute(commandToRun, '\', '\\\\', 'g')
@@ -448,23 +450,23 @@ function! s:ChangeVals(changed)
     " The value has changed so we need to grab our current position back
     " to the start of the tag
     let replaceVal = strpart(getline("."), tagstart,s:curCurs-tagstart)
-    call s:Debug("ChangeVals", "User entered this value: ".replaceVal)
+    "call s:Debug("ChangeVals", "User entered this value: ".replaceVal)
     let tagmatch = replaceVal
-    call s:Debug("ChangeVals", "Col is: ".col("."))
-    exec "normal ".s:StrLen(tagmatch)."\<Left>"
-    call s:Debug("ChangeVals", "Col is: ".col("."))
+    "call s:Debug("ChangeVals", "Col is: ".col("."))
+    call cursor(0,col('.')-s:StrLen(tagmatch))
+    "call s:Debug("ChangeVals", "Col is: ".col("."))
   else
     " The value hasn't changed so it's just the tag name
     " without any quotes that are around it
-    call s:Debug("ChangeVals", "Tag name is: ".b:tag_name)
+    "call s:Debug("ChangeVals", "Tag name is: ".b:tag_name)
     let replaceVal = substitute(b:tag_name, '^"\(.*\)"$', '\1', '')
-    call s:Debug("ChangeVals", "User did not enter a value. Replacing with this value: ".replaceVal)
+    "call s:Debug("ChangeVals", "User did not enter a value. Replacing with this value: ".replaceVal)
     let tagmatch = ''
-    call s:Debug("ChangeVals", "Col is: ".col("."))
+    "call s:Debug("ChangeVals", "Col is: ".col("."))
   endif
 
   let tagmatch = '\V'.snip_start_tag.tagmatch.snip_end_tag
-  call s:Debug("ChangeVals", "Matching on this string: ".tagmatch)
+  "call s:Debug("ChangeVals", "Matching on this string: ".tagmatch)
   let tagsubstitution = s:RunCommand(commandToRun, replaceVal)
   let lines = split(substitute(getline("."), tagmatch, tagsubstitution, ""),'\n')
   if len(lines) > 1
@@ -537,9 +539,9 @@ function! s:SubCommandOutput(text)
   let text = a:text
   while match(text, search) != -1
     let command_match = matchstr(text, search)
-    call s:Debug("SubCommandOutput", "Command found: ".command_match)
+    "call s:Debug("SubCommandOutput", "Command found: ".command_match)
     let command = substitute(command_match, '^..\(.*\)..$', '\1', '')
-    call s:Debug("SubCommandOutput", "Command being run: ".command)
+    "call s:Debug("SubCommandOutput", "Command being run: ".command)
     exec 'let output = '.command
     let output = escape(output, '\')
     let text = substitute(text, '\V'.escape(command_match, '\'), output, '')
@@ -566,16 +568,16 @@ function! s:RemoveAndStoreCommands(text)
     return ''
   endtry
   while ind > -1
-    call s:Debug("RemoveAndStoreCommands", "Text is: ".text)
-    call s:Debug("RemoveAndStoreCommands", "index is: ".ind)
+    "call s:Debug("RemoveAndStoreCommands", "Text is: ".text)
+    "call s:Debug("RemoveAndStoreCommands", "index is: ".ind)
     let tag = matchstr(text, b:search_str, ind)
-    call s:Debug("RemoveAndStoreCommands", "Tag is: ".tag)
+    "call s:Debug("RemoveAndStoreCommands", "Tag is: ".tag)
     let commandToRun = matchstr(tag, snip_elem_delim.".*".snip_end_tag)
 
     if commandToRun != ''
       let tag_name = strpart(tag,strlen(snip_start_tag),match(tag,snip_elem_delim)-strlen(snip_start_tag))
-      call s:Debug("RemoveAndStoreCommands", "Got this tag: ".tag_name)
-      call s:Debug("RemoveAndStoreCommands", "Adding this command: ".commandToRun)
+      "call s:Debug("RemoveAndStoreCommands", "Got this tag: ".tag_name)
+      "call s:Debug("RemoveAndStoreCommands", "Adding this command: ".commandToRun)
       if tag_name != ''
         if has_key(tmp_command_dict, tag_name)
           call add(tmp_command_dict[tag_name], strpart(commandToRun, 1, strlen(commandToRun)-strlen(snip_end_tag)-1))
@@ -594,7 +596,7 @@ function! s:RemoveAndStoreCommands(text)
         endif
       endif
     endif
-    call s:Debug("RemoveAndStoreCommands", "".tag." found at ".ind)
+    "call s:Debug("RemoveAndStoreCommands", "".tag." found at ".ind)
     let ind = match(text, b:search_str, ind+strlen(snip_end_tag))
   endwhile
 
@@ -613,7 +615,7 @@ endfunction
 " {{{ ReturnKey() - Return our mapped key or Supertab key
 function! s:ReturnKey()
   if s:supInstalled
-    call s:Debug('ReturnKey', 'Snippy: SuperTab installed. Returning <C-n> instead of <Tab>')
+    "call s:Debug('ReturnKey', 'Snippy: SuperTab installed. Returning <C-n> instead of <Tab>')
     return "\<C-R>=".s:SupSNR."SuperTab('n')\<CR>"
   else
     " We need this hacky line as the one below doesn't seem to work.
@@ -647,7 +649,7 @@ function! <SID>Jumper()
   let [snip_start_tag, snip_elem_delim, snip_end_tag] = s:SetLocalTagVars()
 
   " Set up some mapping in case we got called before Supertab
-  if s:supInstalled == 1
+  if s:supInstalled == 1 && s:done_remap != 1
     call s:SetupSupertab()
     call s:SnipMapKeys()
   endif
@@ -668,7 +670,7 @@ function! <SID>Jumper()
   " First we'll check that the user hasn't just typed a snippet to expand
   let origword = matchstr(strpart(getline("."), 0, s:curCurs), '\(^\|\s\)\S\{-}$')
   let origword = substitute(origword, '\s', "", "")
-  call s:Debug("Jumper", "Original word was: ".origword)
+  "call s:Debug("Jumper", "Original word was: ".origword)
   let word = s:Hash(origword)
   " The following code is lifted from the imaps.vim script - Many
   " thanks for the inspiration to add the TextMate compatibility
@@ -687,7 +689,7 @@ function! <SID>Jumper()
   if found == 0
     " Check using keyword boundary
     let origword = matchstr(strpart(getline("."), 0, s:curCurs), '\k\{-}$')
-    call s:Debug("Jumper", "Original word was: ".origword)
+    "call s:Debug("Jumper", "Original word was: ".origword)
     let word = s:Hash(origword)
     if exists('b:trigger_'.word)
       exe 'let rhs = b:trigger_'.word
@@ -700,38 +702,45 @@ function! <SID>Jumper()
   if rhs != ''
     " Save the value of hlsearch
     if &hls
-      call s:Debug("Jumper", "Hlsearch set")
+      "call s:Debug("Jumper", "Hlsearch set")
       setlocal nohlsearch
       let b:hl_on = 1
     else
-      call s:Debug("Jumper", "Hlsearch not set")
+      "call s:Debug("Jumper", "Hlsearch not set")
       let b:hl_on = 0
     endif
     " Save the last search value
     let b:search_sav = @/
+    " Count the number of lines in the rhs
+    let move_up = ""
+    if len(split(rhs, "\<CR>")) - 1 != 0
+      let move_up = len(split(rhs, "\<CR>")) - 1
+      let move_up = move_up."\<Up>"
+    endif
+
     " If this is a mapping, then erase the previous part of the map
     " by returning a number of backspaces.
     let bkspc = substitute(origword, '.', "\<BS>", "g")
-    call s:Debug("Jumper", "Backspacing ".s:StrLen(origword)." characters")
+    "call s:Debug("Jumper", "Backspacing ".s:StrLen(origword)." characters")
     let delEndTag = ""
     if s:CheckForInTag()
-      call s:Debug("Jumper", "We're doing a nested tag")
-      call s:Debug("Jumper", "B:tag_name: ".b:tag_name)
+      "call s:Debug("Jumper", "We're doing a nested tag")
+      "call s:Debug("Jumper", "B:tag_name: ".b:tag_name)
       if b:tag_name != ''
         try
-          call s:Debug("Jumper", "Commands for this tag are currently: ".join(b:command_dict[b:tag_name],"', '"))
-          call s:Debug("Jumper", "Removing command for '".b:tag_name."'")
+          "call s:Debug("Jumper", "Commands for this tag are currently: ".join(b:command_dict[b:tag_name],"', '"))
+          "call s:Debug("Jumper", "Removing command for '".b:tag_name."'")
           unlet b:command_dict[b:tag_name][0]
-          call s:Debug("Jumper", "Commands for this tag are now: ".join(b:command_dict[b:tag_name],"', '"))
+          "call s:Debug("Jumper", "Commands for this tag are now: ".join(b:command_dict[b:tag_name],"', '"))
         catch /E175/
-          call s:Debug("Jumper", "Could not find this key in the dict: ".b:tag_name)
+          "call s:Debug("Jumper", "Could not find this key in the dict: ".b:tag_name)
         endtry
       endif
-      call s:Debug("Jumper", "Deleting start tag")
+      "call s:Debug("Jumper", "Deleting start tag")
       let bkspc = bkspc.substitute(snip_start_tag, '.', "\<BS>", "g")
-      call s:Debug("Jumper", "Deleting end tag")
+      "call s:Debug("Jumper", "Deleting end tag")
       let delEndTag = substitute(snip_end_tag, '.', "\<Del>", "g")
-      call s:Debug("Jumper", "Deleting ".s:StrLen(delEndTag)." characters")
+      "call s:Debug("Jumper", "Deleting ".s:StrLen(delEndTag)." characters")
     endif
     
     " We've found a mapping so we'll substitute special variables
@@ -746,17 +755,17 @@ function! <SID>Jumper()
     " Save the value of 'backspace'
     let bs_save = &backspace
     set backspace=indent,eol,start
-    return bkspc.delEndTag.rhs."\<Esc>:set backspace=".bs_save."\<CR>a\<C-r>=<SNR>".s:SID()."_NextHop()\<CR>"
+    return bkspc.delEndTag.rhs."\<Esc>".move_up."^:set backspace=".bs_save."\<CR>a\<C-r>=<SNR>".s:SID()."_NextHop()\<CR>"
   else
     " No definition so let's check to see whether we're in a tag
     if s:CheckForInTag()
-      call s:Debug("Jumper", "No mapping and we're in a tag")
+      "call s:Debug("Jumper", "No mapping and we're in a tag")
       " We're in a tag so we need to do processing
       if strpart(s:line, s:curCurs - strlen(snip_start_tag), strlen(snip_start_tag)) == snip_start_tag
-        call s:Debug("Jumper", "Value not changed")
+        "call s:Debug("Jumper", "Value not changed")
         call s:ChangeVals(0)
       else
-        call s:Debug("Jumper", "Value changed")
+        "call s:Debug("Jumper", "Value changed")
         call s:ChangeVals(1)
       endif
       return "\<C-r>=<SNR>".s:SID()."_NextHop()\<CR>"
@@ -862,9 +871,9 @@ function! s:CreateSnippet() range
   endif
   call append("$", "Snippet ".trig." ".snip)
   if getline(1) == ""
-    normal ggdd
+    1 delete _
   endif
-  normal G
+  call cursor(line('$'),1)
 endfunction
 
 " This function will convert the selected range into a snippet suitable for
@@ -909,9 +918,9 @@ function! s:CreateBundleSnippet() range
   endif
   call append("$", 'exe "Snippet '.trig." ".snip.'"')
   if getline(1) == ""
-    normal ggdd
+    1 delete _
   endif
-  normal G
+  call cursor(line('$'),1)
 endfunction
 
 " This function will just return what's passed to it unless a change has been
@@ -943,17 +952,17 @@ endfunction
 " This function chops tags from any text passed to it
 function! s:ChopTags(text)
   let text = a:text
-  call s:Debug("ChopTags", "ChopTags was passed this text: ".text)
+  "call s:Debug("ChopTags", "ChopTags was passed this text: ".text)
   let [snip_start_tag, snip_elem_delim, snip_end_tag] = s:SetLocalTagVars()
   let text = strpart(text, strlen(snip_start_tag))
   let text = strpart(text, 0, strlen(text)-strlen(snip_end_tag))
-  call s:Debug("ChopTags", "ChopTags is returning this text: ".text)
+  "call s:Debug("ChopTags", "ChopTags is returning this text: ".text)
   return text
 endfunction
 
 " This function ensures we measure string lengths correctly
 function! s:StrLen(str)
-  call s:Debug("StrLen", "StrLen returned: ".strlen(substitute(a:str, '.', 'x', 'g'))." based on this text: ".a:str)
+  "call s:Debug("StrLen", "StrLen returned: ".strlen(substitute(a:str, '.', 'x', 'g'))." based on this text: ".a:str)
   return strlen(substitute(a:str, '.', 'x', 'g'))
 endfunction
 
