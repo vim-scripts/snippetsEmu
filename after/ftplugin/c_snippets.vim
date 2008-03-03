@@ -24,6 +24,13 @@ function! CArgList(count)
     endif
 endfunction
 	
+function! CMacroName(filename)
+    let name = a:filename
+    let name = substitute(name, '\.','_','g')
+    let name = substitute(name, '\(.\)','\u\1','g')
+    return name
+endfunction
+
 let st = g:snip_start_tag
 let et = g:snip_end_tag
 let cd = g:snip_elem_delim
@@ -31,7 +38,7 @@ let cd = g:snip_elem_delim
 exec "Snippet do do<CR>{<CR>".st.et."<CR>} while (".st.et.");".st.et
 exec "Snippet readfile std::vector<uint8_t> v;<CR>if(FILE* fp = fopen(\"".st."filename".et."\", \"r\"))<CR>{<CR>uint8_t buf[1024];<CR>while(size_t len = fread(buf, 1, sizeof(buf), fp))<CR>v.insert(v.end(), buf, buf + len);<CR>fclose(fp);<CR>}<CR>".st.et
 exec "Snippet beginend ".st."v".et.".begin(), ".st."v".et.".end()".st.et
-exec "Snippet once #ifndef _``substitute(expand('%'),'\\(.\\)','\\u\\1','g')``_<CR><CR>#define _``substitute(expand('%'),'\\(.\\)','\\u\\1','g')``_<CR><CR>".st.et."<CR><CR>#endif /* _``substitute(expand('%'),'\\(.\\)','\\u\\1','g')``_ */<CR>".st.et
+exec "Snippet once #ifndef ``CMacroName(expand('%'))``_<CR><CR>#define ``CMacroName(expand('%'))``_<CR><CR>".st.et."<CR><CR>#endif /* ``CMacroName(expand('%'))``_ */<CR>"
 "exec "Snippet once #ifndef _".st."file:substitute(expand('%'),'\\(.\\)','\\u\\1','g')".et."_<CR><CR>#define _".st."file".et."_<CR><CR>".st.et."<CR><CR>#endif /* _".st."file".et."_ */<CR>".st.et
 exec "Snippet class class ".st."name".et."<CR>{<CR>public:<CR>".st."name".et." (".st."arguments".et.");<CR>virtual ~".st."name".et."();<CR><CR>private:<CR>".st.et."<CR>};<CR>".st.et
 " TODO This is a good one but I can't quite work out the syntax yet
